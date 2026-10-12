@@ -31,29 +31,29 @@ function parseArgs(argv: string[]): Args {
 
 const str = (v: unknown) => (typeof v === "string" ? v : undefined);
 
-const HELP = `feelcheck ${VERSION}: measure how a web app feels, then keep only the fixes that help.
+const HELP = `kymo ${VERSION}: measure how a web app feels, then keep only the fixes that help.
 
 Usage
-  feelcheck audit [url]      Drive the app, measure, write .feelcheck/latest.json and report.html
-      --config <file>          Config file (default: feelcheck.config.json if present)
+  kymo audit [url]      Drive the app, measure, write .kymo/latest.json and report.html
+      --config <file>          Config file (default: kymo.config.json if present)
       --routes /,/settings     Routes to visit
       --trace <file>           Replay a saved trace instead of discovering controls
       --only <a,b>             With --trace: replay only matching interactions (group, #id, key,
                                or position in the trace),
                                or @app for app-wide rules only. Saves to runs/<name>.json/.html.
-      --out <dir>              Output folder (default .feelcheck)
+      --out <dir>              Output folder (default .kymo)
       --save-as <name>         Also save the run as <out>/runs/<name>.json
       --fail-on <level>        Exit 1 if any finding is at least this severe (error|warning|suggestion)
       --no-screens             Skip before/after screenshots
-  feelcheck verify --before <run.json> --after <run.json> [--target <id,id>]
+  kymo verify --before <run.json> --after <run.json> [--target <id,id>]
                              Keep or revert a change. Exit 0 = keep, 3 = revert.
-  feelcheck profile [url] [--write [file]]
+  kymo profile [url] [--write [file]]
                              Infer a motion profile and optionally write its token file
       --as <name>              Force a profile: productive, expressive, calm, physical
-  feelcheck eval [--port 4199]
+  kymo eval [--port 4199]
                              Audit the bundled jank zoo and score it against its answer key
-  feelcheck zoo [--port 4173] Serve the jank zoo
-  feelcheck rules            List the rules and their evidence
+  kymo zoo [--port 4173] Serve the jank zoo
+  kymo rules            List the rules and their evidence
 `;
 
 function configFrom(args: Args): Config {
@@ -179,7 +179,7 @@ async function main() {
     ];
     process.stdout.write(lines.join("\n") + "\n");
     if (args.write) {
-      const file = typeof args.write === "string" ? args.write : "feelcheck.motion.css";
+      const file = typeof args.write === "string" ? args.write : "kymo.motion.css";
       writeFileSync(file, renderTokensCss(chosen, inference));
       writeFileSync(file.replace(/\.css$/, "") + ".json", renderTokensJson(chosen, inference));
       log(`Wrote ${file} and its .json twin. Review them before any fix uses them.`);
@@ -192,10 +192,10 @@ async function main() {
     const { startZoo } = (await import(pathToFileURL(join(ZOO_DIR, "server.mjs")).href)) as { startZoo: (p: number) => Promise<{ close(): void }> };
     const server = await startZoo(port);
     try {
-      const outDir = str(args.out) ?? join(".feelcheck", "eval");
+      const outDir = str(args.out) ?? join(".kymo", "eval");
       const config = loadConfig(undefined, { baseUrl: `http://localhost:${port}`, routes: ["/"], outDir });
-      if (existsSync("feelcheck.config.json")) log("Note: eval ignores feelcheck.config.json and audits the bundled zoo.");
-      const result = await audit({ ...config, groupAttribute: "data-feelcheck-group" }, { log });
+      if (existsSync("kymo.config.json")) log("Note: eval ignores kymo.config.json and audits the bundled zoo.");
+      const result = await audit({ ...config, groupAttribute: "data-kymo-group" }, { log });
       writeRun(result, outDir, "zoo");
       const score = scoreAgainstAnswers(result);
       writeFileSync(join(outDir, "score.json"), JSON.stringify(score, null, 2));
@@ -232,6 +232,6 @@ process.stdout.on("error", (e: NodeJS.ErrnoException) => {
 });
 
 main().catch((e) => {
-  process.stderr.write(`feelcheck: ${e instanceof Error ? e.message : String(e)}\n`);
+  process.stderr.write(`kymo: ${e instanceof Error ? e.message : String(e)}\n`);
   process.exitCode = 1;
 });

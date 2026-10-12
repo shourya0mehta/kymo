@@ -21,7 +21,7 @@ describe("fix and verify loop", () => {
     const original = readFileSync(css, "utf8");
     const server = await startZoo(PORT, dir);
     try {
-      const config = loadConfig(undefined, { baseUrl: `http://localhost:${PORT}`, outDir: join(dir, ".feelcheck") });
+      const config = loadConfig(undefined, { baseUrl: `http://localhost:${PORT}`, outDir: join(dir, ".kymo") });
       const before = await audit(config, { screenshots: false });
       const target = before.findings.find((f) => f.rule === "MOT-09" && f.group === "teleport-panel");
       expect(target).toBeTruthy();

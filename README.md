@@ -1,14 +1,16 @@
-# feelcheck
+# kymo
 
 Measures how a web app feels in a real browser, then lets Claude fix what it finds and keeps only the fixes that measurably help.
 
-![A feelcheck report: findings with rule ids, measured numbers, fixes and evidence](docs/report.png)
+Named after the kymograph, Carl Ludwig's 1847 rotating drum whose stylus turned blood pressure into a line on paper, so physiologists could read change over time instead of guessing by eye.
+
+![A kymo report: findings with rule ids, measured numbers, fixes and evidence](docs/report.png)
 
 ## Why
 
 Most UI polish skills for coding agents are instructions. The agent reads your code and guesses how the app feels. Code can't show you a button that takes 600 ms to react, a panel that jumps 220 px in one frame, or a save that fails without a word. Screenshots can't either.
 
-feelcheck runs the app, presses things the way a person would, and measures what happens. Claude only does the part a measurement can't: finding the right file and writing the fix. Then feelcheck replays the same presses and decides whether the fix stays.
+kymo runs the app, presses things the way a person would, and measures what happens. Claude only does the part a measurement can't: finding the right file and writing the fix. Then kymo replays the same presses and decides whether the fix stays.
 
 ## How it works
 
@@ -21,7 +23,7 @@ discover controls -> press each one -> measure -> rank
 2. **Watch idle first.** Each route is watched for a moment with nobody touching it. Carousels, clocks and typed headlines that change on their own are ignored from then on.
 3. **Press.** Hover, hold for about 90 ms, release, through Playwright's real input events. An in-page instrument samples element geometry every frame, watches DOM mutations, reads the Web Animations API and records event timestamps for 1.2 s.
 4. **Replay under stress.** Presses that fire requests are replayed with the request held for 3 s, then answered with a 500. Presses that move things are replayed with `prefers-reduced-motion: reduce`.
-5. **Verify.** `feelcheck verify` compares two runs of the same trace. A change is kept only if it resolves its target, introduces nothing new (suggestions included), and slows no interaction by more than 50 ms.
+5. **Verify.** `kymo verify` compares two runs of the same trace. A change is kept only if it resolves its target, introduces nothing new (suggestions included), and slows no interaction by more than 50 ms.
 
 ## Rules
 
@@ -40,13 +42,13 @@ Severity follows evidence. Specs and studies can warn or error; practitioner tas
 | CRAFT-07 | Silent or blank failure | Request answered with a 500, no error, alert or retry appears | Standard (AA) + Practitioner | warning |
 | VIS-08 | Motion token sprawl | More than 8 declared durations or 5 easing curves | Practitioner | suggestion |
 
-`feelcheck rules` prints the full text, including where each number comes from.
+`kymo rules` prints the full text, including where each number comes from.
 
 ## Results so far
 
 ![The jank zoo: planted defects next to clean twins](docs/zoo.png)
 
-- **Jank zoo** (`zoo/`): 12 planted defects, 5 clean twins and one app-wide defect, with an answer key. feelcheck finds all 15 expected findings with no false alarms, on three runs in a row. The zoo was built alongside the detector, so treat it as a regression test, not proof.
+- **Jank zoo** (`zoo/`): 12 planted defects, 5 clean twins and one app-wide defect, with an answer key. kymo finds all 15 expected findings with no false alarms, on three runs in a row. The zoo was built alongside the detector, so treat it as a regression test, not proof.
 - **Two real sites, audited as shipped.** On the Fuel Gauge landing page, 4 findings, all confirmed in the source: a 900 ms crosshair transition, `transition: all` on the step numbers, a progress rail animating `height`, and 13 declared durations. On Fallow, 4 findings: 3 confirmed in the source (a meter animating `width` over 900 ms, and 21 declared durations) and 1 likely (a failed sign-in shows no error next to the header button). Early versions raised over 50 findings on these sites. Handling scrolling, SVG redraws, reflow and canvas brought that down, and those fixes were tuned on these same two sites.
 - **The fix loop works end to end** (`npm run test:e2e`). A naive fix for the teleporting panel, `transition: left`, removes the teleport but is reverted for animating a layout property. The transform version is kept.
 - **A fresh Claude following only the skill** polished a copy of the zoo from 15 findings to 0: 14 fixes kept on the first try and 1 on the second. Measured changes included Like feedback from 615 ms to under 16 ms, Save from 312 ms to under 16 ms, and a 900 ms drawer down to 240 ms. Its notes found a timing bug and shaped the current skill.
@@ -54,34 +56,34 @@ Severity follows evidence. Specs and studies can warn or error; practitioner tas
 ## Quick start
 
 ```bash
-git clone https://github.com/shourya0mehta/feelcheck && cd feelcheck
+git clone https://github.com/shourya0mehta/kymo && cd kymo
 npm install && npx playwright install chromium && npm run build
 
 node dist/cli.js eval                                      # audit the bundled jank zoo and score it
 node dist/cli.js audit http://localhost:5173 --routes /,/settings
-open .feelcheck/report.html
+open .kymo/report.html
 ```
 
 Commands:
 
 | Command | Does |
 |---|---|
-| `audit [url]` | Discover, press, measure. Writes `.feelcheck/latest.json`, `trace.json`, `report.html`. `--fail-on warning` for CI. |
-| `audit --trace .feelcheck/trace.json --only <group,#id,@app> --save-as <name>` | Replay part of a trace. Saved to `.feelcheck/runs/<name>.json`. |
+| `audit [url]` | Discover, press, measure. Writes `.kymo/latest.json`, `trace.json`, `report.html`. `--fail-on warning` for CI. |
+| `audit --trace .kymo/trace.json --only <group,#id,@app> --save-as <name>` | Replay part of a trace. Saved to `.kymo/runs/<name>.json`. |
 | `verify --before a.json --after b.json --target <id,id>` | Keep (exit 0) or revert (exit 3). |
 | `profile [url] [--as <name>] [--write motion.css]` | Infer a motion profile and write its tokens. |
 | `eval` | Audit the jank zoo and print precision and recall. |
 | `zoo` | Serve the jank zoo on port 4173. |
 
-A `feelcheck.config.json` holds `baseUrl`, `routes`, `viewport`, `windowMs`, `exclude` selectors and the optional `groupAttribute` (default `data-feelcheck-group`), which groups findings by component.
+A `kymo.config.json` holds `baseUrl`, `routes`, `viewport`, `windowMs`, `exclude` selectors and the optional `groupAttribute` (default `data-kymo-group`), which groups findings by component.
 
 ## Use it with Claude Code
 
-Copy `skills/feelcheck` into `~/.claude/skills/` (or a project's `.claude/skills/`), start your dev server, and ask Claude to polish the app with feelcheck. The skill walks Claude through it: baseline audit, motion profile approval, a plan grouped by control, one fix at a time on a branch, a targeted replay and `verify` after each, a commit or a revert, and a final full comparison against the first baseline. It also lists what Claude must never do, such as editing thresholds or silencing a finding.
+Copy `skills/kymo` into `~/.claude/skills/` (or a project's `.claude/skills/`), start your dev server, and ask Claude to polish the app with kymo. The skill walks Claude through it: baseline audit, motion profile approval, a plan grouped by control, one fix at a time on a branch, a targeted replay and `verify` after each, a commit or a revert, and a final full comparison against the first baseline. It also lists what Claude must never do, such as editing thresholds or silencing a finding.
 
 ## Motion profiles
 
-When an app has no motion vocabulary yet, `feelcheck profile` proposes one of four profiles from what the page shows, and writes them as CSS custom properties once the user approves.
+When an app has no motion vocabulary yet, `kymo profile` proposes one of four profiles from what the page shows, and writes them as CSS custom properties once the user approves.
 
 | Profile | For | Durations (ms) | Enter / exit / move | From |
 |---|---|---|---|---|
@@ -94,9 +96,9 @@ The inference is a heuristic. On the Fuel Gauge landing page the scores were clo
 
 ## Prior art and credit
 
-- [MotionLint](https://github.com/bobaba99/motionlint) instruments live animations in headless Chromium and checks them deterministically. feelcheck's motion inventory overlaps with it.
-- [Pixelslop](https://github.com/gabelul/pixelslop) has a fix, re-measure and roll back loop with a checker that cannot edit code. feelcheck applies the same idea to interaction and motion metrics.
-- [impeccable](https://github.com/pbakaus/impeccable), [Emil Kowalski's skills](https://github.com/emilkowalski/skills) and [Vercel's Web Interface Guidelines](https://github.com/vercel-labs/web-interface-guidelines) are where many of these rules are written down. They check them by reading code; feelcheck measures them.
+- [MotionLint](https://github.com/bobaba99/motionlint) instruments live animations in headless Chromium and checks them deterministically. kymo's motion inventory overlaps with it.
+- [Pixelslop](https://github.com/gabelul/pixelslop) has a fix, re-measure and roll back loop with a checker that cannot edit code. kymo applies the same idea to interaction and motion metrics.
+- [impeccable](https://github.com/pbakaus/impeccable), [Emil Kowalski's skills](https://github.com/emilkowalski/skills) and [Vercel's Web Interface Guidelines](https://github.com/vercel-labs/web-interface-guidelines) are where many of these rules are written down. They check them by reading code; kymo measures them.
 - Thresholds come from published work: the roughly 100 ms limit for feeling cause and effect (Michotte; Card, Moran and Newell), animated transitions and their costs (Chang and Ungar 1993, Bederson and Boltman 1999, Baudisch et al. 2006, Heer and Robertson 2007), waiting (Myers 1985), WCAG 2.2, Core Web Vitals, and the motion tokens of Material 3, Carbon, Fluent and Polaris.
 
 ## What is not built yet

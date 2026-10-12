@@ -1,10 +1,10 @@
-// In-page instrument for feelcheck. Injected with page.addInitScript before any app code runs.
+// In-page instrument for kymo. Injected with page.addInitScript before any app code runs.
 // Plain JavaScript on purpose: it is serialized into the page, so it must not depend on build helpers.
 // It watches one interaction at a time: arm() before the press, disarm() after the watch window.
 (() => {
   if (window.__fc) return;
 
-  const GROUP_ATTR = window.__fcGroupAttr || "data-feelcheck-group";
+  const GROUP_ATTR = window.__fcGroupAttr || "data-kymo-group";
   const JUMP_PX = 24; // teleport threshold (researcher proposal, see rule MOT-09)
   const POP_SHARE = 0.02; // pop threshold: share of viewport area
   const MAX_TRACKED = 1500;
@@ -573,7 +573,7 @@
     const nodes = Array.from(document.querySelectorAll(include));
     for (const el of nodes) {
       if (!visible(el)) continue;
-      if (el.closest("[data-feelcheck-ignore]")) continue;
+      if (el.closest("[data-kymo-ignore]")) continue;
       if (exclude.some((sel) => { try { return el.matches(sel) || el.closest(sel); } catch (e) { return false; } })) continue;
       if (el.disabled || el.getAttribute("aria-disabled") === "true") continue;
       if (el.tagName === "A") {

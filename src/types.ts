@@ -134,7 +134,7 @@ export interface MotionInventory {
 }
 
 export interface AuditResult {
-  tool: "feelcheck";
+  tool: "kymo";
   version: string;
   startedAt: string;
   finishedAt: string;

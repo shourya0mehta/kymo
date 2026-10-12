@@ -11,25 +11,25 @@ export const DEFAULT_INCLUDE = [
   '[role="switch"]',
   '[role="tab"]',
   'a[href^="#"]',
-  "[data-feelcheck-click]",
+  "[data-kymo-click]",
 ].join(", ");
 
 export const DEFAULTS: Config = {
   baseUrl: "http://localhost:4173",
   routes: ["/"],
   viewport: { width: 1280, height: 800 },
-  groupAttribute: "data-feelcheck-group",
+  groupAttribute: "data-kymo-group",
   include: DEFAULT_INCLUDE,
   exclude: [],
   windowMs: 1200,
   maxInteractions: 60,
   probes: { reducedMotion: true, failure: true },
-  outDir: ".feelcheck",
+  outDir: ".kymo",
 };
 
 export function loadConfig(path?: string, overrides: Partial<Config> = {}): Config {
   let fromFile: Partial<Config> = {};
-  const file = path ?? (existsSync("feelcheck.config.json") ? "feelcheck.config.json" : undefined);
+  const file = path ?? (existsSync("kymo.config.json") ? "kymo.config.json" : undefined);
   if (file) {
     fromFile = JSON.parse(readFileSync(resolve(file), "utf8"));
   }

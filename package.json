@@ -1,5 +1,5 @@
 {
-  "name": "feelcheck",
+  "name": "kymo",
   "version": "0.1.0",
   "description": "Measures how a web app feels in a real browser, then lets Claude fix what it finds and keeps only the fixes that measurably help.",
   "main": "dist/index.js",
@@ -25,7 +25,7 @@
   },
   "type": "module",
   "bin": {
-    "feelcheck": "dist/cli.js"
+    "kymo": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -49,6 +49,6 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/shourya0mehta/feelcheck"
+    "url": "https://github.com/shourya0mehta/kymo"
   }
 }

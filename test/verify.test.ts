@@ -10,7 +10,7 @@ const run = (key: string, feedbackMs: number | null): InteractionRun => ({
   interaction: ix(key), mode: "normal", capture: null, requests: [], feedbackMs,
 });
 const result = (trace: string[], findings: Finding[], feedback: Record<string, number | null> = {}): AuditResult => ({
-  tool: "feelcheck", version: "t", startedAt: "", finishedAt: "", baseUrl: "", routes: ["/"],
+  tool: "kymo", version: "t", startedAt: "", finishedAt: "", baseUrl: "", routes: ["/"],
   viewport: { width: 1, height: 1 }, trace: trace.map(ix), findings,
   runs: trace.map((k) => run(k, feedback[k] ?? 20)),
   inventory: { durations: [], easings: [], runtime: { durations: [], easings: [] }, sources: { durations: {}, easings: {} }, hasReducedMotionQuery: false },

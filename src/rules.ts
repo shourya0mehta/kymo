@@ -114,7 +114,7 @@ export const RULES: Record<string, Rule> = {
     evidence: "Practitioner",
     threshold: "More than 8 distinct durations or more than 5 distinct easing curves in use",
     why: "Design systems converge on 4 to 6 durations and a few curves; drift shows up as many one-off values.",
-    fix: "Adopt a motion profile (feelcheck profile --write) and move every transition onto its tokens.",
+    fix: "Adopt a motion profile (kymo profile --write) and move every transition onto its tokens.",
     source: "https://carbondesignsystem.com/elements/motion/overview/",
   },
 };

@@ -4,7 +4,7 @@ import type { ProfileInference, ProfileTokens } from "./infer.js";
 export function renderTokensCss(p: ProfileTokens, inference?: ProfileInference): string {
   const why = inference?.reasons.length ? inference.reasons.map((r) => ` *   - ${r}`).join("\n") : " *   - chosen by hand";
   return `/*
- * Motion tokens: ${p.label} profile (written by feelcheck, approve before use)
+ * Motion tokens: ${p.label} profile (written by kymo, approve before use)
  * Source: ${p.source}
  * Why this profile:
 ${why}

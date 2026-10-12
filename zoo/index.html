@@ -9,26 +9,26 @@
 <body>
   <header>
     <h1>Jank zoo</h1>
-    <p>Planted feel defects next to clean twins, each with an answer key in <code>answers.json</code>. feelcheck is scored on how many it catches (recall) and how many clean exhibits it leaves alone (precision).</p>
+    <p>Planted feel defects next to clean twins, each with an answer key in <code>answers.json</code>. kymo is scored on how many it catches (recall) and how many clean exhibits it leaves alone (precision).</p>
   </header>
 
   <main>
     <!-- ===== planted defects ===== -->
-    <section class="card rm-safe" data-feelcheck-group="dead-button">
+    <section class="card rm-safe" data-kymo-group="dead-button">
       <span class="tag defect">Planted: dead click</span>
       <h2>Export</h2>
       <p>Looks like a button. Does nothing.</p>
       <button class="btn" type="button">Export CSV</button>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="slow-ack">
+    <section class="card rm-safe" data-kymo-group="slow-ack">
       <span class="tag defect">Planted: slow feedback</span>
       <h2>Like</h2>
       <p>Updates 600 ms after the click, with no pressed state.</p>
       <button class="btn" type="button" id="slow-ack-btn">Like <span class="count">0</span></button>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="teleport-panel">
+    <section class="card rm-safe" data-kymo-group="teleport-panel">
       <span class="tag defect">Planted: teleport</span>
       <h2>Move panel</h2>
       <p>The panel jumps 220 px in one frame.</p>
@@ -36,7 +36,7 @@
       <div class="slab" id="teleport-slab">Panel</div>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="pop-panel">
+    <section class="card rm-safe" data-kymo-group="pop-panel">
       <span class="tag defect">Planted: pop</span>
       <h2>Details</h2>
       <p>A large sheet appears fully formed.</p>
@@ -44,7 +44,7 @@
       <div class="sheet" id="pop-sheet">Order #2041<br>Shipped Tuesday, arriving Friday.</div>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="height-accordion">
+    <section class="card rm-safe" data-kymo-group="height-accordion">
       <span class="tag defect">Planted: layout animation</span>
       <h2>Shipping</h2>
       <p>Expands by animating height.</p>
@@ -52,7 +52,7 @@
       <div class="acc" id="acc"><div class="acc-inner">Standard, 3 to 5 days<br>Express, next day</div></div>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="transition-all">
+    <section class="card rm-safe" data-kymo-group="transition-all">
       <span class="tag defect">Planted: transition: all</span>
       <h2>Select plan</h2>
       <p>The tile animates every property, padding included.</p>
@@ -60,7 +60,7 @@
       <div class="tile" id="tile">Team plan</div>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="slow-drawer">
+    <section class="card rm-safe" data-kymo-group="slow-drawer">
       <span class="tag defect">Planted: 900 ms animation</span>
       <h2>Filters</h2>
       <p>The drawer takes almost a second to arrive.</p>
@@ -68,7 +68,7 @@
       <div class="drawer" id="drawer">Filters</div>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="easein-toast">
+    <section class="card rm-safe" data-kymo-group="easein-toast">
       <span class="tag defect">Planted: ease-in entrance</span>
       <h2>Copy link</h2>
       <p>The toast accelerates in instead of settling.</p>
@@ -76,7 +76,7 @@
       <div class="toast-slot" id="toast-slot"></div>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="linear-sidebar">
+    <section class="card rm-safe" data-kymo-group="linear-sidebar">
       <span class="tag defect">Planted: linear movement</span>
       <h2>Navigation</h2>
       <p>The rail slides in on a linear curve.</p>
@@ -84,7 +84,7 @@
       <div class="rail" id="rail">Inbox<br>Drafts<br>Sent</div>
     </section>
 
-    <section class="card" data-feelcheck-group="rm-ignored">
+    <section class="card" data-kymo-group="rm-ignored">
       <span class="tag defect">Planted: ignores reduced motion</span>
       <h2>Announcement</h2>
       <p>The banner slides in even when the user asked for less motion.</p>
@@ -92,7 +92,7 @@
       <div class="banner-slot" id="banner-slot"></div>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="silent-save">
+    <section class="card rm-safe" data-kymo-group="silent-save">
       <span class="tag defect">Planted: no pending state, silent error</span>
       <h2>Profile</h2>
       <p>Saves with no sign of progress and says nothing if it fails.</p>
@@ -100,7 +100,7 @@
       <p class="status" id="silent-save-status"></p>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="blank-on-error">
+    <section class="card rm-safe" data-kymo-group="blank-on-error">
       <span class="tag defect">Planted: blank on error</span>
       <h2>Recent items</h2>
       <p>Shows a spinner, then nothing at all if the request fails.</p>
@@ -108,7 +108,7 @@
       <div class="list" id="load-list"></div>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="token-sprawl">
+    <section class="card rm-safe" data-kymo-group="token-sprawl">
       <span class="tag defect">Planted: motion token sprawl</span>
       <h2>Tags</h2>
       <p>Nine hover durations and six curves for one row of chips.</p>
@@ -120,14 +120,14 @@
     </section>
 
     <!-- ===== clean twins ===== -->
-    <section class="card rm-safe" data-feelcheck-group="good-button">
+    <section class="card rm-safe" data-kymo-group="good-button">
       <span class="tag clean">Clean twin</span>
       <h2>Like</h2>
       <p>Pressed state while held, count updates at once.</p>
       <button class="btn press" type="button" id="good-like">Like <span class="count">0</span></button>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="good-save">
+    <section class="card rm-safe" data-kymo-group="good-save">
       <span class="tag clean">Clean twin</span>
       <h2>Profile</h2>
       <p>Shows Saving... right away and a clear error with a retry.</p>
@@ -135,7 +135,7 @@
       <p class="status" id="good-save-status" aria-live="polite"></p>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="good-dialog">
+    <section class="card rm-safe" data-kymo-group="good-dialog">
       <span class="tag clean">Clean twin</span>
       <h2>Details</h2>
       <p>The sheet fades and scales in over 180 ms.</p>
@@ -143,7 +143,7 @@
       <div class="sheet sheet-good" id="good-sheet">Order #2041<br>Shipped Tuesday, arriving Friday.</div>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="good-toggle">
+    <section class="card rm-safe" data-kymo-group="good-toggle">
       <span class="tag clean">Clean twin</span>
       <h2>Move panel</h2>
       <p>The panel slides with transform over 200 ms.</p>
@@ -151,7 +151,7 @@
       <div class="slab slab-good" id="good-slab">Panel</div>
     </section>
 
-    <section class="card rm-safe" data-feelcheck-group="good-reveal">
+    <section class="card rm-safe" data-kymo-group="good-reveal">
       <span class="tag clean">Clean twin</span>
       <h2>Shipping</h2>
       <p>Options fade up with opacity and transform.</p>

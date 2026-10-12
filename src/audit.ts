@@ -117,7 +117,7 @@ export async function audit(config: Config, opts: AuditOptions = {}): Promise<Au
   for (const f of findings) counts[f.severity]++;
 
   return {
-    tool: "feelcheck",
+    tool: "kymo",
     version: VERSION,
     startedAt,
     finishedAt: new Date().toISOString(),
@@ -150,7 +150,7 @@ async function runOne(
       });
     } else if (mode === "server-error") {
       await page.route(matches, (route) =>
-        route.fulfill({ status: 500, contentType: "application/json", body: '{"error":"feelcheck injected failure"}' }).catch(() => {}),
+        route.fulfill({ status: 500, contentType: "application/json", body: '{"error":"kymo injected failure"}' }).catch(() => {}),
       );
     }
     await loadAndSettle(page, config.baseUrl + interaction.route);
