@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jank zoo</title>
+  <link rel="stylesheet" href="zoo.css">
+</head>
+<body>
+  <header>
+    <h1>Jank zoo</h1>
+    <p>Planted feel defects next to clean twins, each with an answer key in <code>answers.json</code>. feelcheck is scored on how many it catches (recall) and how many clean exhibits it leaves alone (precision).</p>
+  </header>
+
+  <main>
+    <!-- ===== planted defects ===== -->
+    <section class="card rm-safe" data-feelcheck-group="dead-button">
+      <span class="tag defect">Planted: dead click</span>
+      <h2>Export</h2>
+      <p>Looks like a button. Does nothing.</p>
+      <button class="btn" type="button">Export CSV</button>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="slow-ack">
+      <span class="tag defect">Planted: slow feedback</span>
+      <h2>Like</h2>
+      <p>Updates 600 ms after the click, with no pressed state.</p>
+      <button class="btn" type="button" id="slow-ack-btn">Like <span class="count">0</span></button>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="teleport-panel">
+      <span class="tag defect">Planted: teleport</span>
+      <h2>Move panel</h2>
+      <p>The panel jumps 220 px in one frame.</p>
+      <button class="btn" type="button" id="teleport-btn">Move panel</button>
+      <div class="slab" id="teleport-slab">Panel</div>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="pop-panel">
+      <span class="tag defect">Planted: pop</span>
+      <h2>Details</h2>
+      <p>A large sheet appears fully formed.</p>
+      <button class="btn" type="button" id="pop-btn">Show details</button>
+      <div class="sheet" id="pop-sheet">Order #2041<br>Shipped Tuesday, arriving Friday.</div>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="height-accordion">
+      <span class="tag defect">Planted: layout animation</span>
+      <h2>Shipping</h2>
+      <p>Expands by animating height.</p>
+      <button class="btn" type="button" id="acc-btn">Show options</button>
+      <div class="acc" id="acc"><div class="acc-inner">Standard, 3 to 5 days<br>Express, next day</div></div>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="transition-all">
+      <span class="tag defect">Planted: transition: all</span>
+      <h2>Select plan</h2>
+      <p>The tile animates every property, padding included.</p>
+      <button class="btn" type="button" id="tile-btn">Select</button>
+      <div class="tile" id="tile">Team plan</div>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="slow-drawer">
+      <span class="tag defect">Planted: 900 ms animation</span>
+      <h2>Filters</h2>
+      <p>The drawer takes almost a second to arrive.</p>
+      <button class="btn" type="button" id="drawer-btn">Open filters</button>
+      <div class="drawer" id="drawer">Filters</div>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="easein-toast">
+      <span class="tag defect">Planted: ease-in entrance</span>
+      <h2>Copy link</h2>
+      <p>The toast accelerates in instead of settling.</p>
+      <button class="btn" type="button" id="toast-btn">Copy link</button>
+      <div class="toast-slot" id="toast-slot"></div>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="linear-sidebar">
+      <span class="tag defect">Planted: linear movement</span>
+      <h2>Navigation</h2>
+      <p>The rail slides in on a linear curve.</p>
+      <button class="btn" type="button" id="rail-btn">Open rail</button>
+      <div class="rail" id="rail">Inbox<br>Drafts<br>Sent</div>
+    </section>
+
+    <section class="card" data-feelcheck-group="rm-ignored">
+      <span class="tag defect">Planted: ignores reduced motion</span>
+      <h2>Announcement</h2>
+      <p>The banner slides in even when the user asked for less motion.</p>
+      <button class="btn" type="button" id="banner-btn">Show banner</button>
+      <div class="banner-slot" id="banner-slot"></div>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="silent-save">
+      <span class="tag defect">Planted: no pending state, silent error</span>
+      <h2>Profile</h2>
+      <p>Saves with no sign of progress and says nothing if it fails.</p>
+      <button class="btn" type="button" id="silent-save-btn">Save profile</button>
+      <p class="status" id="silent-save-status"></p>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="blank-on-error">
+      <span class="tag defect">Planted: blank on error</span>
+      <h2>Recent items</h2>
+      <p>Shows a spinner, then nothing at all if the request fails.</p>
+      <button class="btn" type="button" id="load-btn">Load items</button>
+      <div class="list" id="load-list"></div>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="token-sprawl">
+      <span class="tag defect">Planted: motion token sprawl</span>
+      <h2>Tags</h2>
+      <p>Nine hover durations and six curves for one row of chips.</p>
+      <div class="chips">
+        <span class="chip c1">design</span><span class="chip c2">motion</span><span class="chip c3">ux</span>
+        <span class="chip c4">css</span><span class="chip c5">a11y</span><span class="chip c6">perf</span>
+        <span class="chip c7">react</span><span class="chip c8">tokens</span><span class="chip c9">qa</span>
+      </div>
+    </section>
+
+    <!-- ===== clean twins ===== -->
+    <section class="card rm-safe" data-feelcheck-group="good-button">
+      <span class="tag clean">Clean twin</span>
+      <h2>Like</h2>
+      <p>Pressed state while held, count updates at once.</p>
+      <button class="btn press" type="button" id="good-like">Like <span class="count">0</span></button>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="good-save">
+      <span class="tag clean">Clean twin</span>
+      <h2>Profile</h2>
+      <p>Shows Saving... right away and a clear error with a retry.</p>
+      <button class="btn press" type="button" id="good-save-btn">Save profile</button>
+      <p class="status" id="good-save-status" aria-live="polite"></p>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="good-dialog">
+      <span class="tag clean">Clean twin</span>
+      <h2>Details</h2>
+      <p>The sheet fades and scales in over 180 ms.</p>
+      <button class="btn press" type="button" id="good-dialog-btn">Show details</button>
+      <div class="sheet sheet-good" id="good-sheet">Order #2041<br>Shipped Tuesday, arriving Friday.</div>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="good-toggle">
+      <span class="tag clean">Clean twin</span>
+      <h2>Move panel</h2>
+      <p>The panel slides with transform over 200 ms.</p>
+      <button class="btn press" type="button" id="good-toggle-btn">Move panel</button>
+      <div class="slab slab-good" id="good-slab">Panel</div>
+    </section>
+
+    <section class="card rm-safe" data-feelcheck-group="good-reveal">
+      <span class="tag clean">Clean twin</span>
+      <h2>Shipping</h2>
+      <p>Options fade up with opacity and transform.</p>
+      <button class="btn press" type="button" id="good-reveal-btn">Show options</button>
+      <div class="reveal" id="good-reveal">Standard, 3 to 5 days<br>Express, next day</div>
+    </section>
+  </main>
+
+  <script src="zoo.js"></script>
+</body>
+</html>

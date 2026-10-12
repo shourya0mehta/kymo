@@ -1,0 +1,226 @@
+:root {
+  --ink: #16181d;
+  --muted: #5b6170;
+  --line: #e3e5ea;
+  --bg: #f7f7f5;
+  --card: #ffffff;
+  --accent: #2f5bea;
+  --defect: #b4371f;
+  --clean: #1d7a46;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+header { padding: 32px 40px 0; }
+header h1 { font-size: 24px; margin: 0 0 6px; letter-spacing: -0.01em; }
+header p { color: var(--muted); margin: 0; max-width: 760px; }
+
+main {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 24px 40px 64px;
+}
+
+.card {
+  position: relative;
+  height: 270px;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+.card h2 { font-size: 16px; margin: 4px 0 2px; }
+.card p { margin: 0; color: var(--muted); font-size: 14px; }
+.tag { font-size: 12px; font-weight: 600; }
+.tag.defect { color: var(--defect); }
+.tag.clean { color: var(--clean); }
+
+.btn {
+  appearance: none;
+  border: 1px solid #cfd2d9;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  margin-top: 12px;
+}
+.btn:hover { border-color: #aeb3bd; }
+
+/* clean twins: pressed state while held */
+.btn.press { transition: transform 100ms var(--ease-out), background-color 100ms var(--ease-out); }
+.btn.press:active { transform: scale(0.97); background-color: #f1f2f4; }
+.btn[disabled] { opacity: 0.6; cursor: default; }
+
+/* teleport and its clean twin */
+.slab {
+  position: relative;
+  left: 0;
+  width: 110px;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #eef1fb;
+  color: #253a8a;
+  font-size: 13px;
+}
+.slab.moved { left: 220px; }
+.slab-good { left: auto; transition: transform 200ms var(--ease-out); }
+.slab-good.moved { left: auto; transform: translateX(200px); }
+
+/* pop sheet and its clean twin */
+.sheet {
+  display: none;
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  height: 120px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 24px rgba(20, 24, 34, 0.12);
+  font-size: 14px;
+}
+.sheet.open { display: block; }
+.sheet-good.open { animation: sheet-in 180ms var(--ease-out); }
+@keyframes sheet-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+/* layout animation: height */
+.acc { height: 0; overflow: hidden; transition: height 240ms var(--ease-out); }
+.acc.open { height: 64px; }
+.acc-inner { padding-top: 10px; font-size: 14px; }
+
+/* transition: all */
+.tile {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 200ms var(--ease-out);
+}
+.tile.on { padding: 16px 20px; background: #eef1fb; border-color: #c9d3f5; }
+
+/* 900 ms drawer */
+.drawer {
+  position: absolute;
+  top: 0; bottom: 0; right: 0;
+  width: 46%;
+  padding: 16px;
+  background: #fbfbfa;
+  border-left: 1px solid var(--line);
+  transform: translateX(105%);
+  transition: transform 900ms var(--ease-out);
+}
+.drawer.open { transform: none; }
+
+/* ease-in toast */
+.toast-slot { position: absolute; left: 16px; right: 16px; bottom: 16px; }
+.toast {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #16181d;
+  color: #fff;
+  font-size: 13px;
+  animation: toast-in 260ms cubic-bezier(0.42, 0, 1, 1);
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* linear rail */
+.rail {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 40%;
+  padding: 16px;
+  background: #fbfbfa;
+  border-right: 1px solid var(--line);
+  font-size: 14px;
+  transform: translateX(-100%);
+  transition: transform 260ms linear;
+}
+.rail.open { transform: none; }
+
+/* banner that ignores reduced motion */
+.banner-slot { position: absolute; left: 16px; right: 16px; bottom: 16px; }
+.banner {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff6e5;
+  color: #6b4a00;
+  font-size: 13px;
+  animation: banner-in 220ms var(--ease-out);
+}
+@keyframes banner-in {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* status lines and lists */
+.status { margin-top: 10px !important; color: var(--ink) !important; }
+.status.error { color: var(--defect) !important; }
+.list { margin-top: 10px; font-size: 14px; }
+.list .item { padding: 4px 0; border-bottom: 1px solid var(--line); }
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid #d5d8de;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* clean reveal */
+.reveal {
+  margin-top: 10px;
+  font-size: 14px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+.reveal.shown { opacity: 1; transform: none; }
+
+/* token sprawl: nine durations, six curves */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.chip { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; }
+.chip.c1 { transition: background-color 110ms ease; }
+.chip.c2 { transition: background-color 130ms ease-in-out; }
+.chip.c3 { transition: background-color 170ms cubic-bezier(0.3, 0.1, 0.3, 1); }
+.chip.c4 { transition: background-color 190ms cubic-bezier(0.6, 0.2, 0.1, 0.9); }
+.chip.c5 { transition: background-color 210ms cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+.chip.c6 { transition: background-color 330ms ease-out; }
+.chip.c7 { transition: background-color 370ms ease; }
+.chip.c8 { transition: background-color 420ms cubic-bezier(0.5, 0, 0.5, 1); }
+.chip.c9 { transition: background-color 450ms ease-in-out; }
+.chip:hover { background: #f1f2f4; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-safe *, .rm-safe *::before, .rm-safe *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; padding: 16px; }
+  header { padding: 24px 16px 0; }
+}

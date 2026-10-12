@@ -1,0 +1,54 @@
+{
+  "name": "feelcheck",
+  "version": "0.1.0",
+  "description": "Measures how a web app feels in a real browser, then lets Claude fix what it finds and keeps only the fixes that measurably help.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && cp src/browser/inpage.js dist/browser/inpage.js",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "zoo": "node zoo/server.mjs",
+    "eval": "tsx src/cli.ts eval",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
+  },
+  "author": "Shourya Mehta",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.56.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  },
+  "type": "module",
+  "bin": {
+    "feelcheck": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "zoo",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "ux",
+    "motion",
+    "animation",
+    "playwright",
+    "claude",
+    "skill",
+    "accessibility",
+    "performance"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shourya0mehta/feelcheck"
+  }
+}
