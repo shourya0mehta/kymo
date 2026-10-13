@@ -54,7 +54,7 @@ export function feedbackProbe(runs: InteractionRun[], t: Thresholds = DEFAULT_TH
     const block = longest(run.capture.longFrames, t.longFrameMs);
     const blockNote = block ? ` A ${Math.round(block.duration)} ms frame blocked the page.` : "";
 
-    // Nothing in the DOM changed but pixels did: feedback drawn on a canvas. Time it from screen frames.
+    // Nothing in the DOM changed but pixels did: usually feedback drawn on a canvas. Time it from screen frames.
     if (feedbackMs == null && run.pixelsChanged) {
       const px = canvas.get(run.interaction.key)?.pixelMs;
       if (px != null && px > t.feedbackMs) {
@@ -63,7 +63,7 @@ export function feedbackProbe(runs: InteractionRun[], t: Thresholds = DEFAULT_TH
             keyParts: [run.interaction.key],
             interaction: run.interaction,
             element: target,
-            message: `Clicking ${label(target)} took ${px} ms to change the picture (timed from screen frames; the page draws on a canvas).${blockNote}`,
+            message: `Clicking ${label(target)} took ${px} ms to change the picture (timed from screen frames, because nothing in the DOM changed).${blockNote}`,
             metrics: { feedbackMs: px, budgetMs: t.feedbackMs, timedFrom: "pixels" },
             sourceKeys: block ? ["@longframe"] : undefined,
           }),

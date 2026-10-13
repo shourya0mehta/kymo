@@ -830,7 +830,7 @@
   fc.focusBaseline = () => {
     if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
     fc.focusSigs = new Map();
-    for (const el of document.querySelectorAll(TABBABLE)) if (visible(el)) fc.focusSigs.set(el, focusSig(el));
+    for (const el of document.querySelectorAll(TABBABLE)) if (visible(el) && !el.closest("[data-kymo-ignore]")) fc.focusSigs.set(el, focusSig(el));
     return fc.focusSigs.size;
   };
   fc.focusCheck = () => {
@@ -1013,11 +1013,23 @@
   };
 
   // ---------- discovery ----------
+  // A pointer can only press what is on the page and bigger than a pixel. Controls parked off the
+  // page until they get focus (skip links) or clipped to nothing (screen-reader text) are keyboard
+  // only, and the focus walk already covers them.
+  const pointerReachable = (el) => {
+    const r = el.getBoundingClientRect();
+    if (r.bottom + scrollY <= 0 || r.right + scrollX <= 0) return false;
+    if (r.width * r.height <= 4) return false;
+    const cs = getComputedStyle(el);
+    if (cs.clip === "rect(0px, 0px, 0px, 0px)" || /inset\(50%\)/.test(cs.clipPath)) return false;
+    return true;
+  };
   fc.discover = (include, exclude) => {
     const out = [];
     const nodes = Array.from(document.querySelectorAll(include));
     for (const el of nodes) {
       if (!visible(el)) continue;
+      if (!pointerReachable(el)) continue; // skip links parked above the page, screen-reader-only text
       if (el.closest("[data-kymo-ignore]")) continue;
       if (exclude.some((sel) => { try { return el.matches(sel) || el.closest(sel); } catch (e) { return false; } })) continue;
       if (el.disabled || el.getAttribute("aria-disabled") === "true" || el.readOnly) continue;

@@ -22,7 +22,8 @@ export function reducedMotionProbe(runs: InteractionRun[]): Finding[] {
     if (run.mode !== "reduced-motion" || !run.capture) continue;
     for (const a of run.capture.animations) {
       const moving = movementProps(a);
-      if (!moving.length || a.duration <= 0) continue;
+      // a 1 ms animation is the usual way to switch motion off under reduced motion; anything under 50 ms is instant
+      if (!moving.length || a.duration < 50) continue;
       if (a.iterations === -1 && /spin|rotat|load/i.test(a.name ?? "")) continue; // spinners are allowed
       if (isPressFeedback(a, run)) continue;
       out.push(

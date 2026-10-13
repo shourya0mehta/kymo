@@ -1,11 +1,11 @@
-// The kymo report: one self-contained HTML file. Light theme is ink on recording paper,
-// dark theme is a scratch on smoked paper, the two media a kymograph writes on.
+// The kymo report: one self-contained HTML file. A cobalt pen on gridded recording paper,
+// set in Bricolage Grotesque and Martian Mono, with a dark theme that keeps the same tokens.
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AuditResult, Finding, InteractionRun, Severity, SourceInfo } from "../types.js";
 import { RULES } from "../rules.js";
-import { markSvg, markSvgPaper, moodOf } from "../brand.js";
+import { markSvg, moodOf } from "../brand.js";
 import { replayHint } from "../replay.js";
 import { durationRuler, easingGlyph, interactionTrace, responseMs, sessionStrip, SEV_GLYPH, sparkline } from "./trace.js";
 
@@ -20,14 +20,22 @@ function inlineImage(outDir: string, rel?: string): string | null {
   return `data:image/jpeg;base64,${readFileSync(p).toString("base64")}`;
 }
 
-/** The report typeface, embedded so the file looks the same offline. Falls back to Georgia. */
+/** The report's two faces, embedded so the file looks the same offline: Bricolage Grotesque and Martian Mono. */
 function fontFace(): string {
-  for (const p of [join(here, "..", "..", "assets", "fonts", "SourceSerif4-latin-wght.woff2"), join(here, "..", "assets", "fonts", "SourceSerif4-latin-wght.woff2")]) {
-    if (existsSync(p)) {
-      return `@font-face{font-family:"Source Serif 4";font-style:normal;font-weight:200 900;font-display:swap;src:url(data:font/woff2;base64,${readFileSync(p).toString("base64")}) format("woff2")}`;
+  const faces: [string, string, string][] = [
+    ["Bricolage Grotesque", "BricolageGrotesque-latin-opsz-wght.woff2", "font-weight:200 800"],
+    ["Martian Mono", "MartianMono-latin-wght-wdth.woff2", "font-weight:100 800;font-stretch:75% 112.5%"],
+  ];
+  let css = "";
+  for (const [family, file, range] of faces) {
+    for (const dir of [join(here, "..", "..", "assets", "fonts"), join(here, "..", "assets", "fonts")]) {
+      const p = join(dir, file);
+      if (!existsSync(p)) continue;
+      css += `@font-face{font-family:"${family}";font-style:normal;${range};font-display:block;src:url(data:font/woff2;base64,${readFileSync(p).toString("base64")}) format("woff2")}`;
+      break;
     }
   }
-  return "";
+  return css;
 }
 
 const SEV_LABEL: Record<Severity, string> = { error: "Error", warning: "Warning", suggestion: "Suggestion" };
@@ -109,8 +117,8 @@ function indexHtml(findings: Finding[]): string {
   return `<nav class="index" aria-label="Findings by rule"><ul>${items}</ul></nav>`;
 }
 
-const LIGHT = `--paper:#F5F7F2;--paper-2:#ECF1EA;--ink:#17233B;--pencil:#5B6577;--hair:#DCE5DD;--g:#DEE9E0;--G:#C2D6C7;--red:#C4302B;--ochre:#9C6106;--mark-ink:#17233B;--code:#E7EEE7`;
-const DARK = `--paper:#16130F;--paper-2:#211D17;--ink:#ECE5D5;--pencil:#A69E8F;--hair:#332D25;--g:rgba(236,229,213,.055);--G:rgba(236,229,213,.12);--red:#EE6B59;--ochre:#E0A847;--mark-ink:#ECE5D5;--code:#2A251E`;
+const LIGHT = `--paper:#F3F4F7;--paper-2:#FFFFFF;--ink:#12141C;--pencil:#5A6072;--hair:#DCDFE8;--g:#ECEEF3;--G:#DCDFE8;--pen:#2E46F0;--link:#2438D6;--red:#E0393E;--ochre:#B97800;--code:#E8EAF1`;
+const DARK = `--paper:#0E1016;--paper-2:#161922;--ink:#E8EAF2;--pencil:#9AA1B4;--hair:#272B37;--g:#1B1E28;--G:#272B37;--pen:#8A9BFF;--link:#A9B6FF;--red:#FF6B6E;--ochre:#F2B544;--code:#1E222D`;
 
 export function renderReport(result: AuditResult, outDir: string): string {
   const { counts } = result;
@@ -163,7 +171,7 @@ export function renderReport(result: AuditResult, outDir: string): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>kymo report: ${esc(headline)}</title>
-<link rel="icon" href="data:image/svg+xml,${encodeURIComponent(markSvg({ mood, simple: false }))}">
+<link rel="icon" href="data:image/svg+xml,${encodeURIComponent(markSvg({ mood }))}">
 <style>
 ${fontFace()}
 :root{${LIGHT};color-scheme:light}
@@ -171,20 +179,19 @@ ${fontFace()}
 :root[data-theme=dark]{${DARK};color-scheme:dark}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 "Source Serif 4",Georgia,"Times New Roman",serif;font-variant-numeric:lining-nums tabular-nums;font-optical-sizing:auto}
+body{margin:0;background:var(--paper);color:var(--ink);font:15.5px/1.6 "Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;font-variant-numeric:tabular-nums;font-optical-sizing:auto}
+h1,h2,h3,.brand b{font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;font-optical-sizing:auto;letter-spacing:-.02em}
 a{color:inherit;text-decoration-thickness:1px;text-underline-offset:3px}
 a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
-code{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:3px;word-break:break-word}
+code{font:12px/1.5 "Martian Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-stretch:90%;background:var(--code);padding:1px 6px;border-radius:4px;word-break:break-word}
+a{color:var(--link)}
 .wrap{max-width:1120px;margin:0 auto;padding:44px 32px 96px}
 /* masthead */
 .mast{display:grid;grid-template-columns:auto 1fr auto;gap:8px 22px;align-items:end}
-.mark{width:84px;height:84px;display:block}
-.mark.paper{display:none}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .mark.soot{display:none}:root:not([data-theme=light]) .mark.paper{display:block}}
-:root[data-theme=dark] .mark.soot{display:none}:root[data-theme=dark] .mark.paper{display:block}
-.brand{font-weight:700;font-size:15px;letter-spacing:.01em;margin:0;color:var(--pencil)}
-.brand b{color:var(--ink);font-size:17px}
-h1{font-size:39px;line-height:1.12;font-weight:650;letter-spacing:-.012em;margin:4px 0 0}
+.mark{width:76px;height:76px;display:block}
+.brand{font:500 12px "Martian Mono",ui-monospace,monospace;font-stretch:90%;margin:0;color:var(--pencil);display:flex;gap:8px;align-items:baseline}
+.brand b{color:var(--ink);font:800 20px "Bricolage Grotesque",ui-sans-serif,sans-serif;letter-spacing:-.03em}
+h1{font-size:42px;line-height:1.05;font-weight:760;letter-spacing:-.03em;margin:6px 0 0}
 .lede{grid-column:2/3;margin:2px 0 0;color:var(--pencil);font-size:18px;max-width:62ch}
 .meta{display:grid;grid-template-columns:auto auto;gap:2px 14px;margin:0;font-size:13.5px;color:var(--pencil);text-align:left}
 .meta dt{font-weight:600;color:var(--ink)}.meta dd{margin:0;max-width:30ch;overflow-wrap:anywhere}
@@ -194,15 +201,15 @@ h1{font-size:39px;line-height:1.12;font-weight:650;letter-spacing:-.012em;margin
 .session{margin:30px 0 8px}
 .kymo-strip,.kymo-trace,.kymo-ruler{display:block;width:100%;height:auto;overflow:visible}
 .g{stroke:var(--g);stroke-width:1;fill:none}.G{stroke:var(--G);stroke-width:1;fill:none}
-.pen{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.pen{fill:none;stroke:var(--pen);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
 .pen.red,.dur.red{stroke:var(--red)}
 .budget{stroke:var(--red);stroke-width:1.1;stroke-dasharray:2 4;fill:none;opacity:.85}
-.lbl{font:11px/1 "Source Serif 4",Georgia,serif;fill:var(--pencil);paint-order:stroke;stroke:var(--paper-2);stroke-width:3px;stroke-linejoin:round}
+.lbl{font:10px/1 "Martian Mono",ui-monospace,monospace;font-stretch:90%;fill:var(--pencil);paint-order:stroke;stroke:var(--paper-2);stroke-width:3px;stroke-linejoin:round}
 .kymo-strip .lbl,.kymo-ruler .lbl{stroke:var(--paper)}.lbl.red{fill:var(--red)}.lbl.dim{opacity:.8}
 .tick{stroke:var(--pencil);stroke-width:1.2}
 .hatch{stroke:var(--red);stroke-width:2;opacity:.35}
-.anim{stroke:var(--pencil);stroke-width:5;stroke-linecap:round;opacity:.45}.anim.moving{stroke:var(--ink);opacity:.7}.anim.loop{stroke-dasharray:2 5}
-.dur{stroke:var(--ink);stroke-width:2.4;stroke-linecap:round}
+.anim{stroke:var(--pencil);stroke-width:5;stroke-linecap:round;opacity:.45}.anim.moving{stroke:var(--pen);opacity:.75}.anim.loop{stroke-dasharray:2 5}
+.dur{stroke:var(--pen);stroke-width:2.4;stroke-linecap:round}
 .x{stroke:var(--red);stroke-width:1.6;stroke-linecap:round}
 .dot.error{fill:var(--red)}.dot.warning{fill:var(--ochre)}.dot.suggestion{fill:none;stroke:var(--pencil);stroke-width:1.4}
 .hit{fill:transparent}
@@ -219,7 +226,7 @@ h1{font-size:39px;line-height:1.12;font-weight:650;letter-spacing:-.012em;margin
 .index a:hover .t{text-decoration:underline}
 .index .n{color:var(--pencil)}
 .sg{width:11px;height:11px;flex:none;vertical-align:-1px}.sg.error{fill:var(--red)}.sg.warning{fill:var(--ochre)}.sg.suggestion{fill:none;stroke:var(--pencil);stroke-width:1.6}
-h2{font-size:25px;line-height:1.25;font-weight:620;margin:64px 0 6px;letter-spacing:-.005em}
+h2{font-size:26px;line-height:1.2;font-weight:720;margin:64px 0 6px;letter-spacing:-.02em}
 .cols h2:first-child{margin-top:0}
 .note{color:var(--pencil);margin:0 0 18px;max-width:72ch}
 /* findings */
@@ -230,16 +237,16 @@ h2{font-size:25px;line-height:1.25;font-weight:620;margin:64px 0 6px;letter-spac
 .finding[data-sev=error] .kicker .sev{color:var(--red)}.finding[data-sev=warning] .kicker .sev{color:var(--ochre)}
 .kicker .rid{font-variant-numeric:tabular-nums}
 .grp{font-weight:600;color:var(--ink)}
-h3{font-size:21px;line-height:1.3;font-weight:620;margin:4px 0 6px}
+h3{font-size:21px;line-height:1.25;font-weight:700;margin:4px 0 6px}
 .msg{font-size:17px;margin:0 0 12px;max-width:68ch}
-.trace{margin:14px 0 12px;padding:10px 12px 6px;background:var(--paper-2);border-radius:4px}
+.trace{margin:14px 0 12px;padding:10px 12px 6px;background:var(--paper-2);border:1px solid var(--hair);border-radius:8px}
 .via{font-size:14px;color:var(--pencil);margin:0 0 4px}
 .el{margin:0 0 8px;font-size:13px}
 .src{list-style:none;margin:6px 0 12px;padding:0;font-size:14px}
 .src li{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;padding:2px 0}
 .src li>span{color:var(--pencil)}
 .src .sel{background:none;padding:0}
-.fix{margin:10px 0 6px;max-width:68ch;padding-left:14px;border-left:2px solid var(--ink)}
+.fix{margin:10px 0 6px;max-width:68ch;padding-left:14px;border-left:3px solid var(--pen)}
 .ev{font-size:13.5px;color:var(--pencil);margin:6px 0 10px;max-width:72ch}
 details{margin:6px 0}
 summary{cursor:pointer;font-size:14px;color:var(--pencil)}
@@ -251,7 +258,7 @@ summary{cursor:pointer;font-size:14px;color:var(--pencil)}
 .metrics dt{color:var(--pencil)}.metrics dd{margin:0}
 .cmds{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}
 .cmds code{font-size:11.5px}
-.copy{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);background:none;border:1px solid var(--hair);border-radius:3px;padding:2px 7px;cursor:copy}
+.copy{font:11.5px "Martian Mono",ui-monospace,monospace;font-stretch:90%;color:var(--ink);background:none;border:1px solid var(--hair);border-radius:3px;padding:2px 7px;cursor:copy}
 .copy.done{border-color:var(--ink)}
 .empty{font-size:18px;max-width:60ch}
 /* tables and inventory */
@@ -274,7 +281,7 @@ footer svg{width:30px;height:30px}
 </style></head>
 <body><div class="wrap">
 <header class="mast">
-  <div>${markSvg({ mood, title: "kymo", id: "m1" }).replace("<svg ", '<svg class="mark soot" ')}${markSvgPaper({ mood, title: "kymo", id: "m2" }).replace("<svg ", '<svg class="mark paper" ')}</div>
+  <div>${markSvg({ mood, title: "kymo", attrs: 'class="mark"' })}</div>
   <div>
     <p class="brand"><b>kymo</b> ${esc(result.version)}</p>
     <h1>${esc(headline)}</h1>
@@ -323,7 +330,7 @@ ${strip ? `<section class="session" aria-labelledby="rec">
     <details><summary>What kymo checks, and why</summary><div class="tablewrap"><table><thead><tr><th>Rule</th><th>Checks</th><th>Threshold</th><th>Evidence</th><th>Severity</th></tr></thead><tbody>${ruleRows}</tbody></table></div></details>
   </main>
 </div>
-<footer>${markSvg({ mood: "calm", id: "f1" }).replace("<svg ", '<svg class="mark soot" style="width:30px;height:30px" ')}${markSvgPaper({ mood: "calm", id: "f2" }).replace("<svg ", '<svg class="mark paper" style="width:30px;height:30px" ')}<span>Recorded by kymo ${esc(result.version)} in Chromium. A kymograph writes motion onto a turning drum; this one writes how your interface answers.</span></footer>
+<footer>${markSvg({ mood: "calm", attrs: 'class="mark" style="width:28px;height:28px"' })}<span>Recorded by kymo ${esc(result.version)} in Chromium. A kymograph writes motion onto a turning drum; this one writes how your interface answers.</span></footer>
 </div>
 <script>
 (() => {

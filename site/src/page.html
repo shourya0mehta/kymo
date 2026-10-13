@@ -1,0 +1,208 @@
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="kymo home">{{MARK_NAV}}kymo</a>
+    <nav aria-label="Sections">
+      <a href="#catches">What it catches</a>
+      <a href="#loop">How it works</a>
+      <a href="#rules">Rules</a>
+      <a class="keep" href="#install">Install</a>
+    </nav>
+    <a class="gh" href="https://github.com/shourya0mehta/kymo"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.66 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"/></svg>GitHub</a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" id="top">
+    <div class="wrap">
+      <div class="hero-copy">
+        <ul class="version" aria-label="About this release"><li><span class="dot" aria-hidden="true"></span>v{{VERSION}}</li><li>MIT license</li><li>A Claude Code skill</li></ul>
+        <h1>Polish you can prove.</h1>
+        <p class="lede">kymo opens your web app in a real browser and uses it the way a person would. It times every press, watches every frame, and points each slow or jumpy moment at the line of code behind it. <strong>Claude makes the fix. kymo measures again and keeps it only if it helped.</strong></p>
+        <div class="cta">
+          <a class="btn primary" href="#install">Install kymo</a>
+          <a class="btn" href="https://github.com/shourya0mehta/kymo">Read the code</a>
+        </div>
+      </div>
+
+      <div class="recorder" aria-labelledby="rec-title">
+        <div class="rec-head">
+          <svg class="pet" id="pet" viewBox="0 0 64 64" shape-rendering="crispEdges" role="img" aria-label="kymo, the mascot"><path class="body" fill="var(--cobalt)" d=""/><path class="face" fill="#ffffff" d=""/></svg>
+          <div class="rec-title"><b id="rec-title">The recorder</b><span>Press a button. kymo times it from your press to the first frame that shows a change.</span></div>
+          <span class="rec-live"><i aria-hidden="true"></i>recording</span>
+        </div>
+        <svg class="strip" id="strip" viewBox="0 0 640 156" role="img" aria-label="A strip chart of how long each press took to show a change"></svg>
+        <div class="demo">
+          <button type="button" class="snappy" id="d-snappy">Snappy<small>answers in one frame</small></button>
+          <button type="button" id="d-laggy" data-kymo-ignore>Laggy<small>waits 450 ms</small></button>
+          <button type="button" id="d-frozen" data-kymo-ignore>Frozen<small>blocks for 280 ms</small></button>
+        </div>
+        <p class="rec-read" id="rec-read" aria-live="polite">The first pulses are real measurements from the jank zoo. Yours join them as you press.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="catches">
+    <div class="wrap">
+      <h2>It catches what reading the code misses.</h2>
+      <p class="section-lede">Each pair is a real kymo rule. Press Before to feel the problem and After to feel the fix. kymo flags the Before version on its own and stays quiet about the After.</p>
+      <div class="specimens">
+        <article class="specimen" data-spec="teleport">
+          <header><span class="rule-id">MOT-09</span><h3>Teleport</h3></header>
+          <div class="stage"><div class="slab"></div></div>
+          <div class="ab"><button type="button" class="before" data-kymo-ignore>Before</button><button type="button" class="after">After</button></div>
+          <p class="verdict" aria-live="polite">A panel that moves should travel, so the eye can follow it.</p>
+        </article>
+        <article class="specimen" data-spec="pop">
+          <header><span class="rule-id">MOT-09</span><h3>Pop-in</h3></header>
+          <div class="stage"><p class="placeholder">The toast lands here.</p></div>
+          <div class="ab"><button type="button" class="before" data-kymo-ignore>Before</button><button type="button" class="after">After</button></div>
+          <p class="verdict" aria-live="polite">New surfaces should arrive, not appear from nowhere.</p>
+        </article>
+        <article class="specimen" data-spec="vanish">
+          <header><span class="rule-id">MOT-10</span><h3>Blink-out</h3></header>
+          <div class="stage"><div class="notice">Your trial ends in 3 days. Add a card to keep this workspace.</div></div>
+          <div class="ab"><button type="button" class="before" data-kymo-ignore>Before</button><button type="button" class="after">After</button></div>
+          <p class="verdict" aria-live="polite">Things that leave should exit, shorter than they entered.</p>
+        </article>
+        <article class="specimen" data-spec="hover">
+          <header><span class="rule-id">STAB-02</span><h3>Hover reflow</h3></header>
+          <div class="stage"><div class="pair"><span>Follow</span><span>Message</span></div></div>
+          <div class="ab"><button type="button" class="before" data-kymo-ignore>Before</button><button type="button" class="after">After</button></div>
+          <p class="verdict" aria-live="polite">Pointing at a control should never move its neighbours.</p>
+        </article>
+        <article class="specimen" data-spec="wait">
+          <header><span class="rule-id">WAIT-01</span><h3>Silent wait</h3></header>
+          <div class="stage"><div class="saving">Save profile</div></div>
+          <div class="ab"><button type="button" class="before" data-kymo-ignore>Before</button><button type="button" class="after">After</button></div>
+          <p class="verdict" aria-live="polite">A slow request should say it is working, right away.</p>
+        </article>
+        <article class="specimen" data-spec="focus">
+          <header><span class="rule-id">CRAFT-02</span><h3>Invisible focus</h3></header>
+          <div class="stage"><button type="button" class="focus-target no-ring" tabindex="-1" data-kymo-ignore>Archive</button><button type="button" class="focus-target ring" tabindex="-1" hidden>Archive</button></div>
+          <div class="ab"><button type="button" class="before" data-kymo-ignore>Before</button><button type="button" class="after">After</button></div>
+          <p class="verdict" aria-live="polite">Keyboard users need to see where focus is.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="loop">
+    <div class="wrap">
+      <h2>Measure, fix, verify, keep.</h2>
+      <p class="section-lede">Claude does the part a measurement can't: writing the change. Everything else is measured, before and after.</p>
+      <ol class="loop">
+        <li><span class="n">1</span><h3>Measure</h3><p>kymo finds every control, field and route, then presses, types, tabs, hovers and scrolls through them in Chromium, on desktop and a phone.</p><span class="who">kymo</span></li>
+        <li><span class="n">2</span><h3>Point</h3><p>Each finding names the CSS rule, event handler or script behind it, with a timeline of what happened.</p><span class="who">kymo</span></li>
+        <li><span class="n">3</span><h3>Fix</h3><p>Claude makes the smallest change the rule asks for, on a branch, one finding at a time.</p><span class="who">Claude</span></li>
+        <li><span class="n">4</span><h3>Verify</h3><p>kymo replays exactly the same interactions. Anything new, or anything slower, counts against the fix.</p><span class="who">kymo</span></li>
+        <li><span class="n">5</span><h3>Keep or revert</h3><p>A fix that resolves its finding and breaks nothing is committed. Anything else is rolled back.</p><span class="who">kymo and git</span></li>
+      </ol>
+      <p class="loop-note">The loop has its own test in the repo. A quick fix for a teleporting panel, <code>transition: left</code>, removes the jump but animates a layout property, so it is reverted. The transform version is kept.</p>
+    </div>
+  </section>
+
+  <section class="block" id="report">
+    <div class="wrap">
+      <h2>Every finding points at a line.</h2>
+      <p class="section-lede">The report shows what happened over time, where to look, and how to check the fix. This finding is real, from the jank zoo.</p>
+      <div class="report-card">
+        <div class="main">
+          <p class="kick"><span class="sev">Warning</span><code>FEEL-01</code><span>slow-ack, on /</span></p>
+          <h3>Slow feedback after a click</h3>
+          <p class="msg">{{REPORT_MESSAGE}}</p>
+          <div class="trace-box">{{REPORT_TRACE}}</div>
+          <ul class="src">{{REPORT_SOURCES}}</ul>
+          <p class="fix">{{REPORT_FIX}}</p>
+        </div>
+        <div class="side">
+          <h3>Replay it</h3>
+          <p>Only the interactions you touched, so checking a fix takes seconds.</p>
+          <div class="cmd"><code>kymo audit --trace .kymo/trace.json --only slow-ack</code></div>
+          <h3>Keep or revert</h3>
+          <p>Exit 0 keeps the change. Exit 3 means put it back.</p>
+          <div class="cmd"><code>kymo verify --before before.json --after after.json --target FEEL-01-5c130</code></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="rules">
+    <div class="wrap">
+      <h2>{{RULE_COUNT}} rules, each with a source.</h2>
+      <p class="section-lede">Severity follows the evidence. Standards and studies can raise errors and warnings. Taste only ever suggests.</p>
+      <div class="rule-groups">{{RULE_GROUPS}}</div>
+    </div>
+  </section>
+
+  <section class="block" id="proof">
+    <div class="wrap">
+      <h2>Tested on planted jank. Then on this page.</h2>
+      <p class="section-lede">The numbers come from runs you can repeat with <code>kymo eval</code> and from the write-up of two real sites in the repo.</p>
+      <div class="proof">
+        <div class="stat"><b>31 of 31</b><p>planted problems found in the jank zoo, with no false alarms on its 13 clean twins.</p></div>
+        <div class="stat"><b>9 of 15</b><p>findings on a real app, Fallow, confirmed line by line in its source. The rest are listed with why.</p></div>
+        <div class="stat"><b>{{DOG_BEFORE}} to 0</b><p>{{DOG_STAT}}</p></div>
+      </div>
+      <div class="dogfood">
+        {{MARK_DOG}}
+        <div>
+          <h3>We ran kymo on this page before shipping it</h3>
+          <p>{{DOG_SUMMARY}}</p>
+          <ul>{{DOG_LIST}}</ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="install">
+    <div class="wrap">
+      <h2>Two minutes to the first report.</h2>
+      <p class="section-lede">kymo runs on Node 20 or newer with Playwright's Chromium. It is not on npm yet, so it installs from GitHub.</p>
+      <div class="install">
+        <div class="step-card">
+          <h3>Run it on your app</h3>
+          <p>Start your dev server, then point kymo at it.</p>
+          <div class="codeblock"><div class="bar"><span>terminal</span><button type="button" class="copy" data-copy="run">Copy</button></div><pre id="run"><span class="c"># once</span>
+git clone https://github.com/shourya0mehta/kymo
+cd kymo &amp;&amp; npm install
+npx playwright install chromium
+
+<span class="c"># every time</span>
+node dist/cli.js audit http://localhost:5173 \
+  --viewports desktop,mobile
+open .kymo/report.html</pre></div>
+        </div>
+        <div class="step-card">
+          <h3>Hand it to Claude</h3>
+          <p>The skill walks Claude through the loop: baseline, one fix at a time, verify, commit or revert.</p>
+          <div class="codeblock"><div class="bar"><span>terminal</span><button type="button" class="copy" data-copy="skill">Copy</button></div><pre id="skill">cp -r skills/kymo ~/.claude/skills/
+
+<span class="c"># then, in Claude Code</span>
+Polish my app with kymo.</pre></div>
+        </div>
+        <div class="step-card" style="grid-column: 1 / -1">
+          <h3>Gate pull requests</h3>
+          <p>Fails only on findings your saved baseline doesn't already have, and annotates the lines in the diff.</p>
+          <div class="codeblock"><div class="bar"><span>.github/workflows/feel.yml</span><button type="button" class="copy" data-copy="ci">Copy</button></div><pre id="ci">- uses: shourya0mehta/kymo@main
+  with:
+    url: http://localhost:4173
+    viewports: desktop,mobile</pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    {{MARK_FOOT}}
+    <span>kymo is MIT licensed. It is named after the kymograph, the turning drum Carl Ludwig used in 1847 to draw blood pressure as a line.</span>
+    <nav aria-label="Links">
+      <a href="https://github.com/shourya0mehta/kymo">GitHub</a>
+      <a href="https://github.com/shourya0mehta/kymo/blob/main/docs/real-sites.md">Real-site results</a>
+      <a href="https://github.com/shourya0mehta/kymo/blob/main/docs/ci.md">CI guide</a>
+    </nav>
+  </div>
+</footer>

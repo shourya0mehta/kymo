@@ -1,13 +1,35 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/brand/banner-dark.svg">
-    <img src="docs/brand/banner-light.svg" alt="kymo: measures how a web app feels in a real browser, then keeps only the fixes that measurably help" width="100%">
+    <img src="docs/brand/banner-light.svg" alt="kymo: polish you can prove" width="100%">
   </picture>
 </p>
 
-kymo drives your running web app in a real browser the way a person would: it presses every control, types into fields, tabs, hovers, opens dialogs and scrolls, on desktop and on a phone. It measures what happens, frame by frame, and points each problem at the CSS rule, handler or line of JSX behind it. Claude fixes one finding at a time, and kymo replays the same interactions to decide whether each fix stays.
+<h3 align="center">Polish you can prove.</h3>
 
-It is named after the kymograph, Carl Ludwig's 1847 instrument: a stylus scratching a line into smoked paper on a turning drum, so physiologists could read change over time instead of guessing by eye. The mascot is that drum. Its trace is its mood.
+<p align="center">
+  kymo uses your web app in a real browser, measures how every press, keystroke and scroll feels,<br>
+  points each problem at its line of code, and keeps only the fixes that measurably help.
+</p>
+
+<p align="center">
+  <a href="https://shourya0mehta.github.io/kymo/"><b>Website</b></a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#what-it-catches">22 rules</a> ·
+  <a href="#use-it-with-claude-code">Claude Code skill</a> ·
+  <a href="docs/real-sites.md">Real-site results</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/shourya0mehta/kymo/actions/workflows/test.yml"><img src="https://github.com/shourya0mehta/kymo/actions/workflows/test.yml/badge.svg" alt="tests"></a>
+  <img src="https://img.shields.io/badge/version-0.2.0-2E46F0" alt="version 0.2.0">
+  <img src="https://img.shields.io/badge/jank%20zoo-31%20of%2031-178A5B" alt="jank zoo: 31 of 31">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-12141C" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <img src="docs/terminal.png" alt="kymo in a terminal: the mascot, a summary line and three findings, each with a source line and replay commands" width="860">
+</p>
 
 ## Why
 
@@ -15,7 +37,19 @@ Most UI polish skills for coding agents are instructions. The agent reads your c
 
 kymo runs the app and measures. Claude only does the part a measurement can't: writing the fix. Then kymo measures again, and a fix that doesn't measurably help is reverted.
 
-## What it checks
+## The loop
+
+| | Step | Who |
+|---|---|---|
+| 1 | **Measure.** Find every control, field and route, then press, type, Tab, hover and scroll through them in Chromium, on desktop and a phone. | kymo |
+| 2 | **Point.** Name the CSS rule, event handler or JSX line behind each finding, with a timeline of what happened. | kymo |
+| 3 | **Fix.** Make the smallest change the rule asks for, one finding at a time, on a branch. | Claude |
+| 4 | **Verify.** Replay exactly the same interactions. Anything new, or anything slower, counts against the fix. | kymo |
+| 5 | **Keep or revert.** A fix that resolves its finding and breaks nothing is committed. Anything else is rolled back. | kymo and git |
+
+The loop has its own end-to-end test. A quick fix for a teleporting panel, `transition: left`, removes the jump but animates a layout property, so it is reverted. The transform version is kept.
+
+## What it catches
 
 Severity follows evidence. Specs and studies can warn or error; practitioner taste only suggests.
 
@@ -44,78 +78,36 @@ Severity follows evidence. Specs and studies can warn or error; practitioner tas
 | VIS-08 | More than 8 declared durations or 5 easing curves | stylesheets | Practitioner | suggestion |
 | AI-01 | Three or more template tells on one page: dark glow, violet gradients, gradient headlines, default fonts, glass, identical cards, one radius, emoji icons, eyebrows, stock copy, an entrance on every section | page sweep | Practitioner (opinion) | suggestion |
 
-`kymo rules` prints the full text, including where each number comes from.
-
-## How it works
-
-```
-discover ─▶ watch idle ─▶ press · type · hover · open dialogs ─▶ follow what opened ─▶ Tab · scroll
-   ─▶ replay slow, failing, reduced-motion, frame by frame ─▶ map to source ─▶ rank
-   ─▶ Claude fixes one finding ─▶ replay the same trace ─▶ keep or revert
-```
-
-1. **Discover.** On each route and viewport, list the controls a person could press and the fields they could type into, and save them as a trace so later runs do exactly the same things.
-2. **Watch idle first.** Each route is watched with nobody touching it. Carousels, clocks and typed headlines that change on their own are ignored from then on.
-3. **Interact.** Real input through Playwright: point, hold about 90 ms and release (or tap, on touch viewports); type one character and pause without leaving the field. An in-page instrument samples geometry every frame, watches DOM mutations, reads the Web Animations API, and records layout shifts and long animation frames.
-4. **Follow what opened.** Buttons inside a menu or dialog that a press revealed are pressed next, with the steps to reach them saved in the trace. Dialogs are reopened from the keyboard's point of view (does focus move in, does Escape close it, does focus come back), and tooltips are approached with the pointer and then dismissed with Escape.
-5. **Sweep the page.** Tab through every stop and check each one shows where focus is; find small, crowded targets; look for the template look; then scroll to the bottom like a reader, measuring layout shift, long frames and reveal animations.
-6. **Replay under stress.** Presses that fire requests are replayed with the request held for 3 s, then answered with a 500. Presses that move things are replayed with reduced motion on. Presses that change nothing in the DOM but change pixels are replayed with a screencast, so canvas and WebGL apps get timed too.
-7. **Map to source.** Through the DevTools protocol, each finding gets the CSS rules that match its element (following source maps to your files), its event handler, and for long frames, the script position that ate the time. With the optional Babel plugin, the JSX line too.
-8. **Verify.** `kymo verify` compares two runs of the same trace. A change is kept only if it resolves its target, introduces nothing new (suggestions included), and slows no interaction by more than 50 ms.
-
-Runs go in parallel (half your cores, at most four pages at once). The same problem on desktop and mobile is one finding, listed with both viewports.
+`kymo rules` prints the full text, including where each number comes from. The [website](https://shourya0mehta.github.io/kymo/) lets you press a Before and After version of six of them.
 
 ## The report
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/report-dark.png">
-  <img src="docs/report-light.png" alt="A kymo report: the session recording strip, then a finding with its kymogram, source lines, fix and replay commands">
+  <img src="docs/report-light.png" alt="A kymo report: the session recording strip, the findings index, and the first finding with its source lines, fix and replay commands">
 </picture>
 
-The top strip is the whole session as one recording: a pulse per press or keystroke, taller when the screen took longer to answer, red when it missed the budget. Each finding draws its own kymogram (press, release, the budget, when the screen changed, animations as bars, long frames hatched in red), names the files and lines to look at, and gives the commands to replay and verify it. Light theme is ink on recording paper; dark theme is a scratch through smoked paper.
-
-In the terminal:
-
-```
-  ╭─────╮  kymo 0.2.0
-  │ • • │  31 findings: 4 error, 22 warning, 5 suggestion
-  │╱╲╱╲╱│  53 interactions, 2 routes, desktop
-  ╰─────╯
-
-  ● CRAFT-03-046ce  Dialog breaks keyboard focus  dialog-trap
-    The dialog opened by button "Delete project...": focus stays behind it when it opens; Escape does not close it.
-    at zoo.js:121:42
-    replay: --only dialog-trap   verify: --target CRAFT-03-046ce
-
-  ▲ FEEL-04-875e6  Long frame blocks the page  long-task
-    After clicking button "Sort by date", one frame took 257 ms. Nothing can paint or respond until it ends.
-    at zoo.js:99:41
-    replay: --only long-task   verify: --target FEEL-04-875e6
-
-  ○ MOT-10-ecd16  Disappears with no exit  vanish-notice
-    div "Your trial ends in 3 days. Add a card to keep this workspace" (2.9% of the viewport) disappeared in a single frame 15 ms after the click, with no exit animation.
-    at zoo.js:96:43
-    replay: --only vanish-notice   verify: --target MOT-10-ecd16
-```
-
-The creature's trace is its mood: a smile when nothing is wrong, a pulse for warnings, jitter for errors. On a terminal it also draws the recording live while it works, one glyph per press, taller when the answer was slower.
+The top strip is the whole session as one recording: a pulse per press or keystroke, taller when the screen took longer to answer, red when it missed the budget. Each finding draws its own kymogram (press, release, the budget, when the screen changed, animations as bars, long frames hatched in red), names the files and lines to look at, and gives the commands to replay and verify it.
 
 ## Results so far
 
 ![The jank zoo: planted defects next to clean twins](docs/zoo.png)
 
 - **Jank zoo** (`zoo/`): 24 planted defects and 13 clean twins on one page, plus a second route built from every template default, with an answer key. kymo finds all 31 expected findings with no false alarms. The zoo was built alongside the detector, so treat it as a regression test, not proof. CI runs it on every push.
-- **Two real sites, audited as shipped,** on desktop and mobile. Fuel Gauge: 4 findings, 3 confirmed in the source and 1 measured. Fallow: 15 findings, 9 confirmed in the source (three dialogs that mishandle keyboard focus, a canvas that shifts the page as it loads), 1 likely, 3 plausible, 1 measured and 1 timing. Re-checking also showed a v0.1 "confirmed" finding was misattributed. Every finding and its verdict is in [docs/real-sites.md](docs/real-sites.md).
-- **The fix loop works end to end** (`npm run test:e2e`). A naive fix for the teleporting panel, `transition: left`, removes the teleport but is reverted for animating a layout property. The transform version is kept.
+- **Two real sites, audited as shipped,** on desktop and mobile. Fuel Gauge: 4 findings, 3 confirmed in the source and 1 measured. Fallow: 15 findings, 9 confirmed in the source (three dialogs that mishandle keyboard focus, a canvas that shifts the page as it loads), 1 likely, 3 plausible, 1 measured and 1 timing. Every finding and its verdict is in [docs/real-sites.md](docs/real-sites.md).
+- **Its own website.** kymo found 5 problems on the launch page before it shipped. Three were the page's: a demo button that did nothing, a Copy button that jumped 25 px when its label changed, and six touch targets under 44 px on a phone. Two were kymo's: it clicked a skip link that no mouse can reach. All five are fixed, the page's in [site/](site/) and kymo's in discovery, and `kymo verify` kept every change.
 - **A fresh Claude following only the skill** polished an earlier copy of the zoo from 15 findings to 0: 14 fixes kept on the first try and 1 on the second. Its notes found a timing bug and shaped the current skill.
 
 ## Quick start
 
+kymo needs Node 20 or newer and Playwright's Chromium. It is not on npm yet, so it installs from GitHub.
+
 ```bash
 git clone https://github.com/shourya0mehta/kymo && cd kymo
-npm install && npx playwright install chromium        # npm install also builds dist/
+npm install                      # also builds dist/
+npx playwright install chromium
 
-node dist/cli.js eval                                  # audit the bundled jank zoo and score it
+node dist/cli.js eval            # audit the bundled jank zoo and score it
 node dist/cli.js audit http://localhost:5173 --routes /,/settings --viewports desktop,mobile
 open .kymo/report.html
 ```
@@ -133,6 +125,25 @@ open .kymo/report.html
 ## Use it with Claude Code
 
 Copy `skills/kymo` into `~/.claude/skills/` (or a project's `.claude/skills/`), start your dev server, and ask Claude to polish the app with kymo. The skill walks Claude through it: baseline audit, motion profile approval, a plan grouped by control, one fix at a time on a branch, a targeted replay and `verify` after each, a commit or a revert, and a final full comparison against the first baseline. It also lists what Claude must never do, such as editing thresholds, silencing a finding or removing a focus ring to make another finding go away.
+
+## How it works
+
+```
+discover ─▶ watch idle ─▶ press · type · hover · open dialogs ─▶ follow what opened ─▶ Tab · scroll
+   ─▶ replay slow, failing, reduced-motion, frame by frame ─▶ map to source ─▶ rank
+   ─▶ Claude fixes one finding ─▶ replay the same trace ─▶ keep or revert
+```
+
+1. **Discover.** On each route and viewport, list the controls a person could press and the fields they could type into, and save them as a trace so later runs do exactly the same things. Controls a pointer can't reach, like a skip link parked above the page, are left to the keyboard pass.
+2. **Watch idle first.** Each route is watched with nobody touching it. Carousels, clocks and typed headlines that change on their own are ignored from then on.
+3. **Interact.** Real input through Playwright: point, hold about 90 ms and release (or tap, on touch viewports); type one character and pause without leaving the field. An in-page instrument samples geometry every frame, watches DOM mutations, reads the Web Animations API, and records layout shifts and long animation frames.
+4. **Follow what opened.** Buttons inside a menu or dialog that a press revealed are pressed next, with the steps to reach them saved in the trace. Dialogs are reopened from the keyboard's point of view (does focus move in, does Escape close it, does focus come back), and tooltips are approached with the pointer and then dismissed with Escape.
+5. **Sweep the page.** Tab through every stop and check each one shows where focus is; find small, crowded targets; look for the template look; then scroll to the bottom like a reader, measuring layout shift, long frames and reveal animations.
+6. **Replay under stress.** Presses that fire requests are replayed with the request held for 3 s, then answered with a 500. Presses that move things are replayed with reduced motion on. Presses that change nothing in the DOM but change pixels are replayed with a screencast, so canvas and WebGL apps get timed too.
+7. **Map to source.** Through the DevTools protocol, each finding gets the CSS rules that match its element (following source maps to your files), its event handler, and for long frames, the script position that ate the time. With the optional Babel plugin, the JSX line too.
+8. **Verify.** `kymo verify` compares two runs of the same trace. A change is kept only if it resolves its target, introduces nothing new (suggestions included), and slows no interaction by more than 50 ms.
+
+Runs go in parallel (half your cores, at most four pages at once). The same problem on desktop and mobile is one finding, listed with both viewports.
 
 ## Point findings at your JSX
 
@@ -191,13 +202,25 @@ When an app has no motion vocabulary yet, `kymo profile` proposes one of four pr
 
 The inference is a heuristic. On the Fuel Gauge landing page the scores were close, so it fell back to Productive, when Expressive fits better. `--as expressive` overrides it, and the skill always asks the user before writing tokens.
 
+## Meet kymo
+
+<p>
+  <img src="docs/brand/mark-calm.svg" width="72" alt="kymo, calm">&nbsp;&nbsp;
+  <img src="docs/brand/mark.svg" width="72" alt="kymo, busy">&nbsp;&nbsp;
+  <img src="docs/brand/mark-alarm.svg" width="72" alt="kymo, alarmed">
+</p>
+
+The name comes from the kymograph, Carl Ludwig's 1847 instrument: a stylus drawing a line on a turning drum, so physiologists could read change over time instead of guessing by eye. The mascot is drawn on a 16 by 16 grid, and its mouth is the trace. It smiles when nothing is wrong, pulses when there are warnings, and jitters when there are errors. The same three moods show in the terminal, the report and the site.
+
+Logos, banners and the social card are in [docs/brand](docs/brand). The type is Bricolage Grotesque and Martian Mono; the colour is cobalt `#2E46F0` on paper `#F3F4F7`.
+
 ## Prior art and credit
 
 - [MotionLint](https://github.com/bobaba99/motionlint) instruments live animations in headless Chromium and checks them deterministically. kymo's motion inventory overlaps with it.
 - [Pixelslop](https://github.com/gabelul/pixelslop) has a fix, re-measure and roll back loop with a checker that cannot edit code. kymo applies the same idea to interaction and motion metrics.
 - [impeccable](https://github.com/pbakaus/impeccable), [Emil Kowalski's skills](https://github.com/emilkowalski/skills) and [Vercel's Web Interface Guidelines](https://github.com/vercel-labs/web-interface-guidelines) are where many of these rules are written down. They check them by reading code; kymo measures them.
 - Thresholds come from published work: the roughly 100 ms limit for feeling cause and effect (Michotte; Card, Moran and Newell), animated transitions and their costs (Chang and Ungar 1993, Bederson and Boltman 1999, Baudisch et al. 2006, Heer and Robertson 2007), waiting (Myers 1985), typing latency (Schmid 2023), inline validation (Wroblewski 2009), WCAG 2.2, Core Web Vitals, Long Animation Frames, and the motion tokens of Material 3, Carbon, Fluent and Polaris.
-- The report is set in Source Serif 4 (Adobe, SIL Open Font License), bundled in `assets/fonts`.
+- The report and site are set in [Bricolage Grotesque](https://github.com/ateliertriay/bricolage) (Mathieu Triay) and [Martian Mono](https://github.com/evilmartians/mono) (Evil Martians), both under the SIL Open Font License and bundled in `assets/fonts`.
 
 ## What is not built yet
 
@@ -217,6 +240,7 @@ npm test            # unit tests
 npm run test:e2e    # the fix and verify loop against the zoo (about 2 minutes)
 npm run eval        # zoo precision and recall
 npm run zoo         # serve the zoo at http://localhost:4173
+npm run site        # build the website into site/index.html
 ```
 
 ## License

@@ -1,0 +1,356 @@
+{
+ "version": "0.2.0",
+ "thresholds": {
+  "feedbackMs": 100,
+  "deadMs": 1000,
+  "longFrameMs": 100,
+  "typingMs": 100,
+  "maxDurationMs": 500,
+  "jumpPx": 24,
+  "popShare": 0.02,
+  "sprawlDurations": 8,
+  "sprawlEasings": 5,
+  "clsWarn": 0.1,
+  "clsError": 0.25,
+  "targetPx": 24,
+  "touchTargetPx": 44,
+  "aiTells": 3
+ },
+ "runs": [
+  {
+   "interaction": {
+    "key": "/ #slow-ack-btn",
+    "route": "/",
+    "kind": "click",
+    "target": {
+     "id": "slow-ack-btn",
+     "role": "button",
+     "name": "Like 0",
+     "css": "#slow-ack-btn",
+     "text": "Like 0",
+     "group": "slow-ack"
+    }
+   },
+   "mode": "normal",
+   "capture": {
+    "downAt": 1124.5999999996275,
+    "upAt": 1217.4000000003725,
+    "clickAt": 1217.4000000003725,
+    "firstChangeAt": 1836.199999999255,
+    "changeWhileDown": false,
+    "animations": [],
+    "longFrames": []
+   },
+   "requests": []
+  },
+  {
+   "interaction": {
+    "key": "/ #sort-btn",
+    "route": "/",
+    "kind": "click",
+    "target": {
+     "id": "sort-btn",
+     "role": "button",
+     "name": "Sort by date",
+     "css": "#sort-btn",
+     "text": "Sort by date",
+     "group": "long-task"
+    }
+   },
+   "mode": "normal",
+   "capture": {
+    "downAt": 1116.5999999996275,
+    "upAt": 1209.800000000745,
+    "clickAt": 1209.800000000745,
+    "firstChangeAt": 1127.4000000003725,
+    "changeWhileDown": true,
+    "animations": [
+     {
+      "props": [
+       "background-color"
+      ],
+      "prop": "background-color",
+      "duration": 100,
+      "delay": 0,
+      "iterations": 1,
+      "t": 1125.2,
+      "target": {
+       "css": "#sort-btn"
+      }
+     },
+     {
+      "props": [
+       "transform"
+      ],
+      "prop": "transform",
+      "duration": 100,
+      "delay": 0,
+      "iterations": 1,
+      "t": 1125.2,
+      "target": {
+       "css": "#sort-btn"
+      }
+     },
+     {
+      "props": [
+       "background-color"
+      ],
+      "prop": "background-color",
+      "duration": 98.97592637532853,
+      "delay": 0,
+      "iterations": 1,
+      "t": 1225.2,
+      "target": {
+       "css": "#sort-btn"
+      }
+     },
+     {
+      "props": [
+       "transform"
+      ],
+      "prop": "transform",
+      "duration": 98.97592637532853,
+      "delay": 0,
+      "iterations": 1,
+      "t": 1225.2,
+      "target": {
+       "css": "#sort-btn"
+      }
+     }
+    ],
+    "longFrames": [
+     {
+      "start": 1210.699999999255,
+      "duration": 253.30000000074506,
+      "blocking": 203.149,
+      "script": 251,
+      "render": 0.09999999962747097,
+      "scripts": [
+       {
+        "url": "http://localhost:4199/zoo.js",
+        "fn": "",
+        "invoker": "BUTTON#sort-btn.onclick",
+        "charPos": 3608,
+        "duration": 251
+       }
+      ]
+     }
+    ]
+   },
+   "requests": []
+  },
+  {
+   "interaction": {
+    "key": "/ #good-like",
+    "route": "/",
+    "kind": "click",
+    "target": {
+     "id": "good-like",
+     "role": "button",
+     "name": "Like 0",
+     "css": "#good-like",
+     "text": "Like 0",
+     "group": "good-button"
+    }
+   },
+   "mode": "normal",
+   "capture": {
+    "downAt": 1114.5,
+    "upAt": 1207.199999999255,
+    "clickAt": 1207.199999999255,
+    "firstChangeAt": 1122.7999999988824,
+    "changeWhileDown": true,
+    "animations": [
+     {
+      "props": [
+       "background-color"
+      ],
+      "prop": "background-color",
+      "duration": 100,
+      "delay": 0,
+      "iterations": 1,
+      "t": 1120.7,
+      "target": {
+       "css": "#good-like"
+      }
+     },
+     {
+      "props": [
+       "transform"
+      ],
+      "prop": "transform",
+      "duration": 100,
+      "delay": 0,
+      "iterations": 1,
+      "t": 1120.7,
+      "target": {
+       "css": "#good-like"
+      }
+     },
+     {
+      "props": [
+       "background-color"
+      ],
+      "prop": "background-color",
+      "duration": 98.97071908767347,
+      "delay": 0,
+      "iterations": 1,
+      "t": 1220.7,
+      "target": {
+       "css": "#good-like"
+      }
+     },
+     {
+      "props": [
+       "transform"
+      ],
+      "prop": "transform",
+      "duration": 98.97071908767347,
+      "delay": 0,
+      "iterations": 1,
+      "t": 1220.7,
+      "target": {
+       "css": "#good-like"
+      }
+     }
+    ],
+    "longFrames": []
+   },
+   "requests": []
+  },
+  {
+   "interaction": {
+    "key": "/ #lag-input @type",
+    "route": "/",
+    "kind": "type",
+    "target": {
+     "id": "lag-input",
+     "role": "searchbox",
+     "name": "Search invoices",
+     "css": "#lag-input",
+     "text": "Search invoices",
+     "group": "typing-lag"
+    }
+   },
+   "mode": "normal",
+   "capture": {
+    "downAt": 995.8000000007451,
+    "upAt": 1178.300000000745,
+    "clickAt": null,
+    "firstChangeAt": 1178.7000000011176,
+    "changeWhileDown": true,
+    "animations": [],
+    "longFrames": [
+     {
+      "start": 991.8000000007451,
+      "duration": 186.90000000037253,
+      "blocking": 132.733,
+      "script": 179,
+      "render": 0,
+      "scripts": [
+       {
+        "url": "http://localhost:4199/zoo.js",
+        "fn": "",
+        "invoker": "INPUT#lag-input.onkeydown",
+        "charPos": 3809,
+        "duration": 179
+       }
+      ]
+     }
+    ]
+   },
+   "requests": []
+  }
+ ],
+ "findings": [
+  {
+   "id": "FEEL-01-5c130",
+   "key": "FEEL-01|/ #slow-ack-btn",
+   "rule": "FEEL-01",
+   "severity": "warning",
+   "evidence": "Study",
+   "title": "Slow feedback after a click",
+   "message": "Clicking button \"Like 0\" took 619 ms to show any change, with no pressed state while held.",
+   "interaction": "/ #slow-ack-btn",
+   "route": "/",
+   "element": {
+    "tag": "button",
+    "id": "slow-ack-btn",
+    "testid": null,
+    "group": "slow-ack",
+    "text": "Like 0",
+    "css": "#slow-ack-btn",
+    "role": "button"
+   },
+   "group": "slow-ack",
+   "metrics": {
+    "feedbackMs": 619,
+    "budgetMs": 100,
+    "longFrameMs": null
+   },
+   "fix": "Acknowledge the click in the next frame: a pressed style on :active, an optimistic update, or a pending state that appears immediately. Keep the slow work, but stop making the user wait to see that the click landed.",
+   "viewports": [
+    "desktop"
+   ],
+   "source": {
+    "rules": [
+     {
+      "file": "zoo.css",
+      "line": 89,
+      "selector": ".btn:hover",
+      "motion": false
+     },
+     {
+      "file": "zoo.css",
+      "line": 77,
+      "selector": ".btn",
+      "motion": false
+     }
+    ],
+    "handler": "zoo.js:6:45"
+   },
+   "shots": {
+    "before": "shots/697b0a89a3-before.jpg",
+    "after": "shots/697b0a89a3-after.jpg"
+   }
+  },
+  {
+   "id": "FEEL-04-875e6",
+   "key": "FEEL-04|/ #sort-btn",
+   "rule": "FEEL-04",
+   "severity": "warning",
+   "evidence": "Standard (Long Animation Frames, INP)",
+   "title": "Long frame blocks the page",
+   "message": "After clicking button \"Sort by date\", one frame took 253 ms. Nothing can paint or respond until it ends.",
+   "interaction": "/ #sort-btn",
+   "route": "/",
+   "element": {
+    "tag": "button",
+    "id": "sort-btn",
+    "testid": null,
+    "group": "long-task",
+    "text": "Sort by date",
+    "css": "#sort-btn",
+    "role": "button"
+   },
+   "group": "long-task",
+   "metrics": {
+    "frameMs": 253,
+    "blockingMs": 203,
+    "budgetMs": 100
+   },
+   "fix": "Break the work up: move it off the input handler (requestAnimationFrame, then setTimeout or scheduler.yield), debounce scroll work, or move heavy computation to a worker. The source line below is where the frame spent its time.",
+   "viewports": [
+    "desktop"
+   ],
+   "source": {
+    "handler": "zoo.js:99:41",
+    "script": "zoo.js:99:41"
+   },
+   "shots": {
+    "before": "shots/978ae2e06d-before.jpg",
+    "after": "shots/978ae2e06d-after.jpg"
+   }
+  }
+ ]
+}

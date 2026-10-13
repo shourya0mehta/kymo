@@ -4,7 +4,7 @@ import type { AuditResult, Finding, InteractionRun, Severity } from "./types.js"
 import { feedbackLatency } from "./probes/feedback.js";
 import { preferenceFor, sourceHint } from "./browser/sources.js";
 
-import { moodOf, type Mood } from "./brand.js";
+import { moodOf, terminalMascot, type Mood } from "./brand.js";
 export type { Mood };
 
 export function useColor(stream: NodeJS.WriteStream = process.stderr): boolean {
@@ -16,32 +16,30 @@ export function useColor(stream: NodeJS.WriteStream = process.stderr): boolean {
 export function palette(on: boolean) {
   const wrap = (open: string, close = "\x1b[0m") => (s: string) => (on ? `\x1b[${open}m${s}${close}` : s);
   return {
-    red: wrap("38;5;167"),
-    ochre: wrap("38;5;179"),
-    green: wrap("38;5;108"),
-    ink: wrap("38;5;110"),
+    red: wrap("38;5;203"),
+    ochre: wrap("38;5;214"),
+    green: wrap("38;5;42"),
+    ink: wrap("38;5;69"),
     dim: wrap("2", "\x1b[22m"),
     bold: wrap("1", "\x1b[22m"),
   };
 }
 
-const MOUTH: Record<Mood, string> = { calm: "──╭╮─", busy: "──╱╲─", alarm: "╱╲╱╲╱" };
-
-/** The kymograph drum, with eyes. Its trace is its mood. */
-export function creature(mood: Mood = "busy"): string[] {
-  return ["╭─────╮", "│ • • │", `│${MOUTH[mood]}│`, "╰─────╯"];
+/** The kymo creature in half blocks. Its mouth is the trace, and the trace is its mood. */
+export function creature(mood: Mood = "busy", on = false): string[] {
+  return terminalMascot(mood, on);
 }
 
 export const moodFor = moodOf;
 
-/** Creature on the left, lines of text on the right. */
+/** Creature on the left, lines of text on the right (vertically centred on the four creature lines). */
 export function banner(lines: string[], mood: Mood, on: boolean): string {
-  const c = palette(on);
-  const body = creature(mood);
+  const body = creature(mood, on);
   const out: string[] = [];
-  for (let i = 0; i < Math.max(body.length, lines.length); i++) {
-    const left = body[i] ?? "       ";
-    out.push(`  ${c.ink(left)}  ${lines[i] ?? ""}`.trimEnd());
+  const pad = Math.max(0, Math.floor((body.length - lines.length) / 2));
+  for (let i = 0; i < Math.max(body.length, lines.length + pad); i++) {
+    const left = body[i] ?? "          ";
+    out.push(`  ${left}   ${lines[i - pad] ?? ""}`.trimEnd());
   }
   return out.join("\n");
 }

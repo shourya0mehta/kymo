@@ -9,6 +9,7 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "zoo": "node zoo/server.mjs",
+    "site": "tsx site/build.mts",
     "eval": "tsx src/cli.ts eval",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "prepare": "npm run build"
