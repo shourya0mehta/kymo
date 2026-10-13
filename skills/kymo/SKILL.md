@@ -11,9 +11,16 @@ What kymo does on each route and viewport: presses every control it can see (and
 
 ## 0. Before you start
 
-1. The app must be running locally. Ask for the dev server URL if you do not know it (for example `http://localhost:5173`).
-2. kymo must be runnable. Try `npx kymo --help`. If that fails, the user has a local clone: use `node <clone>/dist/cli.js` everywhere below. Chromium for Playwright: `npx playwright install chromium`.
-3. You need a way to undo. Run `git status`. If the tree is dirty, ask the user whether to commit or stash first. Work on a branch: `git switch -c kymo/polish`.
+1. **Find the engine.** kymo is not on npm yet. Try these in order and use the first that works; everywhere below, `kymo` means that command.
+   - `kymo --help` (the user ran `npm link` in a clone).
+   - A clone the user already has: `node <clone>/dist/cli.js --help`. Ask where it is if you don't know.
+   - Otherwise clone it: `git clone https://github.com/shourya0mehta/kymo ~/kymo && cd ~/kymo && npm install` (this also builds `dist/`), then use `node ~/kymo/dist/cli.js`.
+
+   If the first audit says Chromium is missing, run `npx playwright install chromium` in the kymo folder. Skip that where Chromium is already installed.
+2. **Get the app running where kymo can reach it.**
+   - On the user's own computer (Claude Code): find or start the dev server and note its URL, for example `http://localhost:5173`.
+   - In a cloud workspace (the Claude app): kymo cannot reach a dev server on the user's computer. Get the app's code into the workspace (clone its repo, asking for it if needed), install its dependencies, start its dev server in the background, and audit that local URL. A deployed URL also works when the workspace can reach it, but then you can measure and point, not fix and verify.
+3. **You need a way to undo.** Run `git status` in the app's repo. If the tree is dirty, ask the user whether to commit or stash first. Work on a branch: `git switch -c kymo/polish`. In a cloud workspace the branch lives there: when you finish, offer to push it or open a pull request, and do neither without asking.
 
 ## 1. Configure
 
@@ -29,7 +36,7 @@ Write `kymo.config.json` at the project root:
 
 Pick routes from the router (for example `src/routes`, `app/` or `pages/`). Keep it to the 3 to 6 screens people use most. Add `"mobile"` when the app is used on phones; it doubles the run time. If the app has natural component boundaries, adding `data-kymo-group="<name>"` to them makes findings group by component and makes replays easy to target, but only with the user's OK.
 
-Optional, for React with Babel (Vite's React plugin): `kymo/babel` stamps each element with its `file:line:col` in development, so findings point at the JSX that renders the element. Suggest it, and add it only if the user agrees:
+Optional, for React with Babel (Vite's React plugin): `kymo/babel` stamps each element with its `file:line:col` in development, so findings point at the JSX that renders the element. Suggest it, and add it only if the user agrees. kymo is not on npm, so the app has to install it from the clone first (`npm install -D <clone path>`):
 
 ```ts
 // vite.config.ts
@@ -39,7 +46,7 @@ react({ babel: { plugins: ["kymo/babel"] } })
 ## 2. Baseline
 
 ```bash
-npx kymo audit --save-as before
+kymo audit --save-as before
 cp .kymo/runs/before.json .kymo/runs/before-original.json
 ```
 
@@ -47,15 +54,15 @@ This writes `.kymo/latest.json`, `.kymo/runs/before.json`, `.kymo/trace.json` (t
 
 `source` can hold `markup` (the JSX line, with the Babel plugin), `rules` (the CSS rules that match the element, newest first, with `motion: true` on rules that set a transition or animation), `handler` (the element's own event handler) and `script` (where a long frame spent its time). Paths come from source maps when the dev server serves them; otherwise they are the served files.
 
-Tell the user the headline in two or three sentences and point them at the report.
+Tell the user the headline in two or three sentences and point them at the report. In a cloud workspace the user can't open your files, so send them `report.html` instead.
 
 ## 3. Motion vocabulary (only if needed)
 
 Look at `inventory` in `latest.json`.
 
 - If the app has almost no motion (fewer than 3 distinct durations) or there is a `VIS-08` sprawl finding, it needs a motion profile before you add or change transitions.
-- Run `npx kymo profile`. It prints a proposed profile (Productive, Expressive, Calm or Physical), the scores, and the signals behind them. Show the user the proposal and the signals, and ask them to approve it or pick another (`--as expressive`).
-- Only after approval: `npx kymo profile --as <name> --write src/styles/motion.css` (pick a path that fits the project). This also writes `motion.json`, a record of the choice. Import the CSS where global styles live.
+- Run `kymo profile`. It prints a proposed profile (Productive, Expressive, Calm or Physical), the scores, and the signals behind them. Show the user the proposal and the signals, and ask them to approve it or pick another (`--as expressive`).
+- Only after approval: `kymo profile --as <name> --write src/styles/motion.css` (pick a path that fits the project). This also writes `motion.json`, a record of the choice. Import the CSS where global styles live.
 - From then on every duration and easing you write uses these tokens: `var(--motion-duration-sm|md|lg)` and `var(--motion-ease-enter|exit|move)`. Write translate distances as `calc(12px * var(--motion-distance))` so they collapse to zero under reduced motion.
 - Check whether the app already has a global `@media (prefers-reduced-motion: reduce)` rule. If it does, new motion may already be covered; do not add a second, conflicting one.
 
@@ -90,8 +97,8 @@ Group findings by the control they come from: one fix often resolves several (a 
 3. **Measure it.** Replay only what you touched, then compare. Use the `--only` and `--target` values from the audit summary:
 
    ```bash
-   npx kymo audit --trace .kymo/trace.json --only <group, #id or @app> --save-as after-<n> --no-screens
-   npx kymo verify --before .kymo/runs/before.json --after .kymo/runs/after-<n>.json --target <id>,<id>
+   kymo audit --trace .kymo/trace.json --only <group, #id or @app> --save-as after-<n> --no-screens
+   kymo verify --before .kymo/runs/before.json --after .kymo/runs/after-<n>.json --target <id>,<id>
    ```
 
    App-wide findings such as `VIS-08` have no interaction: replay them with `--only @app`. Route-level findings (layout shift, focus, targets, scroll reveals, the template look) come from the page sweep; the summary's `--only` value replays it. Targeted runs save to `.kymo/runs/` and leave the main report alone. `verify` exits 0 for keep and 3 for revert. It reverts if a target is still there, if anything new appeared (suggestions included), or if any replayed interaction got slower to respond.
@@ -99,15 +106,15 @@ Group findings by the control they come from: one fix often resolves several (a 
    - Keep: `git commit -am "kymo: <rule> on <element>"`.
    - Revert because a target is still there or something new appeared: `git restore <files>`, read the reason, and try one different approach. If that is also reverted, leave the finding for a human and note why.
    - Revert only because feedback got slower on a control your change did not touch: replay that control once more. If it is fast again, it was timing noise; keep the change and note it. If it is slow again, revert.
-5. After every three kept commits, refresh the baseline with a full replay: `npx kymo audit --trace .kymo/trace.json --save-as before`.
+5. After every three kept commits, refresh the baseline with a full replay: `kymo audit --trace .kymo/trace.json --save-as before`.
 
 ## 6. Finish
 
 Run a full replay and compare it with the very first baseline, so effects across components are caught:
 
 ```bash
-npx kymo audit --trace .kymo/trace.json --save-as final
-npx kymo verify --before .kymo/runs/before-original.json --after .kymo/runs/final.json
+kymo audit --trace .kymo/trace.json --save-as final
+kymo verify --before .kymo/runs/before-original.json --after .kymo/runs/final.json
 ```
 
 If it reports something introduced or slower, run it once more. If it repeats, find the commit that caused it by replaying just that control after each kept commit:
@@ -116,24 +123,24 @@ If it reports something introduced or slower, run it once more. If it repeats, f
 base=$(git rev-parse <commit before your first fix>)
 for c in $(git rev-list --reverse $base..HEAD); do
   git checkout -q $c
-  npx kymo audit --trace .kymo/trace.json --only <control> --save-as bisect-$c --no-screens
+  kymo audit --trace .kymo/trace.json --only <control> --save-as bisect-$c --no-screens
 done
 git switch -
 ```
 
 Revert the first commit where it appears (`git revert <sha>`). If no commit reproduces it, report it as noise.
 
-Tell the user: how many findings were fixed and kept, how many were reverted and why, what is left for a human, and the measured changes that matter (for example feedback on Save went from 317 ms to 12 ms). Point them at `.kymo/report.html` from the final run.
+Tell the user: how many findings were fixed and kept, how many were reverted and why, what is left for a human, and the measured changes that matter (for example feedback on Save went from 317 ms to 12 ms). Point them at `.kymo/report.html` from the final run (in a cloud workspace, send it to them).
 
 ## 7. Changes that are not fixes
 
 When the user asks for something new rather than a fix (a feature, a redesign, a motion pass, a new component), `verify --target` is the wrong test: it only keeps changes that resolve findings. Use change mode instead. It keeps the change if nothing new appeared and no interaction got slower, across the interactions both runs share.
 
 ```bash
-npx kymo audit --save-as before-change            # before you touch anything
+kymo audit --save-as before-change            # before you touch anything
 # ... make the change ...
-npx kymo audit --save-as after-change             # a full audit, so new controls are found and measured
-npx kymo verify --before .kymo/runs/before-change.json --after .kymo/runs/after-change.json --change
+kymo audit --save-as after-change             # a full audit, so new controls are found and measured
+kymo verify --before .kymo/runs/before-change.json --after .kymo/runs/after-change.json --change
 ```
 
 - Run a full audit after the change, not `--only`: the change can add controls, and their findings count as introduced.

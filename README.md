@@ -16,7 +16,7 @@
   <a href="https://shourya0mehta.github.io/kymo/"><b>Website</b></a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#what-it-catches">22 rules</a> ·
-  <a href="#use-it-with-claude-code">Claude Code skill</a> ·
+  <a href="#use-it-with-claude">Claude skill</a> ·
   <a href="docs/real-sites.md">Real-site results</a>
 </p>
 
@@ -123,9 +123,13 @@ open .kymo/report.html
 | `eval` | Audit the jank zoo and print precision and recall. |
 | `zoo` | Serve the jank zoo on port 4173. |
 
-## Use it with Claude Code
+## Use it with Claude
 
-Copy `skills/kymo` into `~/.claude/skills/` (or a project's `.claude/skills/`), start your dev server, and ask Claude to polish the app with kymo. The skill walks Claude through it: baseline audit, motion profile approval, a plan grouped by control, one fix at a time on a branch, a targeted replay and `verify` after each, a commit or a revert, and a final full comparison against the first baseline. It also lists what Claude must never do, such as editing thresholds, silencing a finding or removing a focus ring to make another finding go away.
+**Claude Code:** copy `skills/kymo` into `~/.claude/skills/` (or a project's `.claude/skills/`), start your dev server, and type `/kymo` or just ask Claude to polish the app with kymo.
+
+**The Claude app:** add `skills/kymo` as a custom skill. There, Claude works in a cloud workspace that can't see a dev server on your computer, so the skill has it clone your app's repo and kymo itself into the workspace, run the app there, and offer the fixes back as a branch or pull request.
+
+Either way, the skill walks Claude through it: baseline audit, motion profile approval, a plan grouped by control, one fix at a time on a branch, a targeted replay and `verify` after each, a commit or a revert, and a final full comparison against the first baseline. It also lists what Claude must never do, such as editing thresholds, silencing a finding or removing a focus ring to make another finding go away.
 
 ## How it works
 
@@ -148,7 +152,7 @@ Runs go in parallel (half your cores, at most four pages at once). The same prob
 
 ## Point findings at your JSX
 
-kymo maps findings to CSS rules and handlers on its own. For React apps built with Babel (Vite's React plugin, for example), the bundled plugin also stamps each element with the line that renders it, in development only:
+kymo maps findings to CSS rules and handlers on its own. For React apps built with Babel (Vite's React plugin, for example), the bundled plugin also stamps each element with the line that renders it, in development only. Until kymo is on npm, install it into your app from your clone first (`npm install -D ../kymo`):
 
 ```ts
 // vite.config.ts
