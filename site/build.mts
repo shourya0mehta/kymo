@@ -88,6 +88,8 @@ const favicon = `data:image/svg+xml,${encodeURIComponent(markSvg({ mood: "busy" 
 const description = "kymo drives your web app in a real browser, measures how every press, keystroke and scroll feels, points each problem at its source line, and keeps only the fixes that measurably help.";
 const head = `<title>kymo</title>
 <meta name="description" content="${esc(description)}">
+<link rel="canonical" href="https://shourya0mehta.github.io/kymo/">
+<meta property="og:url" content="https://shourya0mehta.github.io/kymo/">
 <meta property="og:title" content="kymo: polish you can prove">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:image" content="https://raw.githubusercontent.com/shourya0mehta/kymo/main/docs/brand/social-card.png">
