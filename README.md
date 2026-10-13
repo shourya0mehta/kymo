@@ -22,7 +22,7 @@
 
 <p align="center">
   <a href="https://github.com/shourya0mehta/kymo/actions/workflows/test.yml"><img src="https://github.com/shourya0mehta/kymo/actions/workflows/test.yml/badge.svg" alt="tests"></a>
-  <img src="https://img.shields.io/badge/version-0.2.0-2E46F0" alt="version 0.2.0">
+  <img src="https://img.shields.io/badge/version-0.3.0-2E46F0" alt="version 0.3.0">
   <img src="https://img.shields.io/badge/jank%20zoo-31%20of%2031-178A5B" alt="jank zoo: 31 of 31">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-12141C" alt="MIT license"></a>
 </p>
@@ -95,7 +95,7 @@ The top strip is the whole session as one recording: a pulse per press or keystr
 
 - **Jank zoo** (`zoo/`): 24 planted defects and 13 clean twins on one page, plus a second route built from every template default, with an answer key. kymo finds all 31 expected findings with no false alarms. The zoo was built alongside the detector, so treat it as a regression test, not proof. CI runs it on every push.
 - **Two real sites, audited as shipped,** on desktop and mobile. Fuel Gauge: 4 findings, 3 confirmed in the source and 1 measured. Fallow: 15 findings, 9 confirmed in the source (three dialogs that mishandle keyboard focus, a canvas that shifts the page as it loads), 1 likely, 3 plausible, 1 measured and 1 timing. Every finding and its verdict is in [docs/real-sites.md](docs/real-sites.md).
-- **Its own website.** kymo found 5 problems on the launch page before it shipped. Three were the page's: a demo button that did nothing, a Copy button that jumped 25 px when its label changed, and six touch targets under 44 px on a phone. Two were kymo's: it clicked a skip link that no mouse can reach. All five are fixed, the page's in [site/](site/) and kymo's in discovery, and `kymo verify` kept every change.
+- **Its own website.** kymo found 5 problems on the launch page before it shipped. Three were the page's: a demo button that did nothing, a Copy button that jumped 25 px when its label changed, and six touch targets under 44 px on a phone. Two were kymo's: it clicked a skip link that no mouse can reach. All five are fixed, the page's in [site/](site/) and kymo's in discovery, and `kymo verify` kept every change. A later motion pass added a load sequence, a scroll-linked trace and section entrances; `kymo verify --change` compared all 33 interactions and found no regressions.
 - **A fresh Claude following only the skill** polished an earlier copy of the zoo from 15 findings to 0: 14 fixes kept on the first try and 1 on the second. Its notes found a timing bug and shaped the current skill.
 
 ## Quick start
@@ -116,7 +116,8 @@ open .kymo/report.html
 |---|---|
 | `audit [url]` | Discover, interact, measure. Writes `.kymo/latest.json`, `trace.json`, `report.html`. `--viewports`, `--concurrency`, `--fail-on warning`. |
 | `audit --trace .kymo/trace.json --only <group,#id,@app> --save-as <name>` | Replay part of a trace. Saved to `.kymo/runs/<name>.json`. |
-| `verify --before a.json --after b.json --target <id,id>` | Keep (exit 0) or revert (exit 3). |
+| `verify --before a.json --after b.json --target <id,id>` | A fix: keep (exit 0) only if the targets are resolved and nothing broke, otherwise revert (exit 3). |
+| `verify --before a.json --after b.json --change` | Not a fix (a feature, restyle or motion pass): keep if nothing new appeared and nothing got slower. |
 | `ci [url] --baseline .kymo/baseline.json --sarif kymo.sarif` | Audit, compare with a baseline, write a summary and SARIF, fail on new findings. |
 | `profile [url] [--as <name>] [--write motion.css]` | Infer a motion profile and write its tokens. |
 | `eval` | Audit the jank zoo and print precision and recall. |
@@ -141,7 +142,7 @@ discover ─▶ watch idle ─▶ press · type · hover · open dialogs ─▶ 
 5. **Sweep the page.** Tab through every stop and check each one shows where focus is; find small, crowded targets; look for the template look; then scroll to the bottom like a reader, measuring layout shift, long frames and reveal animations.
 6. **Replay under stress.** Presses that fire requests are replayed with the request held for 3 s, then answered with a 500. Presses that move things are replayed with reduced motion on. Presses that change nothing in the DOM but change pixels are replayed with a screencast, so canvas and WebGL apps get timed too.
 7. **Map to source.** Through the DevTools protocol, each finding gets the CSS rules that match its element (following source maps to your files), its event handler, and for long frames, the script position that ate the time. With the optional Babel plugin, the JSX line too.
-8. **Verify.** `kymo verify` compares two runs of the same trace. A change is kept only if it resolves its target, introduces nothing new (suggestions included), and slows no interaction by more than 50 ms.
+8. **Verify.** `kymo verify` compares two runs. A fix is kept only if it resolves its target, introduces nothing new (suggestions included), and slows no interaction by more than 50 ms. A change that was never meant to fix anything, like a new feature or a motion pass, uses `--change`: it is kept if it introduces nothing new and slows nothing down, and kymo lists anything that got faster and any controls the change removed.
 
 Runs go in parallel (half your cores, at most four pages at once). The same problem on desktop and mobile is one finding, listed with both viewports.
 

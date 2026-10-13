@@ -407,7 +407,7 @@ h1 .line > span { display: block; }
   <section class="hero" id="top">
     <div class="wrap">
       <div class="hero-copy">
-        <ul class="version" aria-label="About this release"><li><span class="dot" aria-hidden="true"></span>v0.2.0</li><li>MIT license</li><li>A Claude Code skill</li></ul>
+        <ul class="version" aria-label="About this release"><li><span class="dot" aria-hidden="true"></span>v0.3.0</li><li>MIT license</li><li>A Claude Code skill</li></ul>
         <h1><span class="line"><span>Polish you</span></span> <span class="line"><span>can prove.</span></span></h1>
         <p class="lede">kymo opens your web app in a real browser and uses it the way a person would. It times every press, watches every frame, and points each slow or jumpy moment at the line of code behind it. <strong>Claude makes the fix. kymo measures again and keeps it only if it helped.</strong></p>
         <div class="cta">
@@ -511,8 +511,11 @@ h1 .line > span { display: block; }
           <p>Only the interactions you touched, so checking a fix takes seconds.</p>
           <div class="cmd"><code>kymo audit --trace .kymo/trace.json --only slow-ack</code></div>
           <h3>Keep or revert</h3>
-          <p>Exit 0 keeps the change. Exit 3 means put it back.</p>
+          <p>Exit 0 keeps the fix. Exit 3 means put it back.</p>
           <div class="cmd"><code>kymo verify --before before.json --after after.json --target FEEL-01-5c130</code></div>
+          <h3>Not a fix?</h3>
+          <p>For a new feature or a redesign, check that nothing got worse instead.</p>
+          <div class="cmd"><code>kymo verify --before before.json --after after.json --change</code></div>
         </div>
       </div>
     </div>
@@ -539,7 +542,7 @@ h1 .line > span { display: block; }
         <svg class="mark" id="dogpet" viewBox="0 0 64 64" shape-rendering="crispEdges" aria-hidden="true"><path class="body" fill="var(--cobalt)" d="M12 4h40v4h-40zM8 8h48v4h-48zM4 12h56v4h-56zM4 16h12v4h-12zM24 16h16v4h-16zM48 16h12v4h-12zM4 20h12v4h-12zM24 20h16v4h-16zM48 20h12v4h-12zM4 24h12v4h-12zM24 24h16v4h-16zM48 24h12v4h-12zM4 28h56v4h-56zM4 32h56v4h-56zM4 36h56v4h-56zM4 40h4v4h-4zM16 40h32v4h-32zM56 40h4v4h-4zM4 44h12v4h-12zM20 44h24v4h-24zM48 44h12v4h-12zM4 48h16v4h-16zM44 48h16v4h-16zM8 52h48v4h-48zM12 56h8v4h-8zM44 56h8v4h-8zM12 60h8v4h-8zM44 60h8v4h-8z"/><path class="face" fill="#FFFFFF" d="M16 16h8v4h-8zM40 16h8v4h-8zM16 20h8v4h-8zM40 20h8v4h-8zM16 24h8v4h-8zM40 24h8v4h-8zM8 40h8v4h-8zM48 40h8v4h-8zM16 44h4v4h-4zM44 44h4v4h-4zM20 48h24v4h-24z"/></svg>
         <div>
           <h3>We ran kymo on this page before shipping it</h3>
-          <p>Desktop and phone, 35 interactions, about two minutes. kymo verify kept every fix: 3 resolved, nothing new, nothing slower. After the motion pass it ran again: 61 scroll entrances per viewport, all under 500 ms and decelerating, and still 0 findings.</p>
+          <p>Desktop and phone, 35 interactions, about two minutes. kymo verify kept every fix: 3 resolved, nothing new, nothing slower. Then came a motion pass: 61 scroll entrances per viewport, all under 500 ms and decelerating, and kymo verify --change found no regressions across all 33 interactions.</p>
           <ul><li>Dead click (FEEL-03). The Archive button in the focus demo did nothing when pressed. It now answers with &quot;Archived&quot;.</li><li>Teleport (MOT-09). The Copy button jumped 25 px sideways when its label grew to &quot;Selected&quot;. It now has a fixed width.</li><li>Small touch targets (CRAFT-09). On a phone, six controls were under 44 px, the smallest 48 by 24. The Copy buttons and footer links now reach 44.</li><li>kymo&#39;s own mistake (FEEL-01, FEEL-03). It clicked the skip link, which sits above the page until it has focus, so no mouse can reach it. kymo now leaves off-page controls to its keyboard pass.</li></ul>
         </div>
       </div>

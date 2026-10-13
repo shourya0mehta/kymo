@@ -64,3 +64,50 @@ describe("verify", () => {
     expect(v.reason).toContain("still there");
   });
 });
+
+describe("verify --change (a feature or redesign, not a fix)", () => {
+  const before = result(["a", "b"], [f("FEEL-01", "FEEL-01|b", "b")], { a: 20, b: 300 });
+
+  it("keeps a change that breaks nothing, even though it resolves nothing", () => {
+    const v = verify(before, before, { mode: "change" });
+    expect(v.decision).toBe("keep");
+    expect(v.mode).toBe("change");
+    expect(v.shared).toBe(2);
+    expect(v.reason).toContain("No regressions");
+  });
+
+  it("still reverts on anything new, including findings on controls the change added", () => {
+    const after = result(["a", "b", "c"], [f("FEEL-01", "FEEL-01|b", "b"), f("MOT-01", "MOT-01|c", "c")], { a: 20, b: 300, c: 20 });
+    const v = verify(before, after, { mode: "change" });
+    expect(v.decision).toBe("revert");
+    expect(v.introduced.map((x) => x.rule)).toEqual(["MOT-01"]);
+    expect(v.added).toEqual(["c"]);
+  });
+
+  it("reverts when feedback gets slower", () => {
+    const after = result(["a", "b"], [f("FEEL-01", "FEEL-01|b", "b")], { a: 200, b: 300 });
+    expect(verify(before, after, { mode: "change" }).decision).toBe("revert");
+  });
+
+  it("reports what got better and what is gone without failing on it", () => {
+    const after = result(["b"], [], { b: 40 });
+    const v = verify(before, after, { mode: "change" });
+    expect(v.decision).toBe("keep");
+    expect(v.resolved.map((x) => x.key)).toEqual(["FEEL-01|b"]);
+    expect(v.faster.map((x) => x.interaction)).toEqual(["b"]);
+    expect(v.gone).toEqual(["a"]);
+    expect(v.reason).toContain("got faster");
+  });
+
+  it("refuses a target, and refuses runs with nothing in common", () => {
+    expect(verify(before, before, { mode: "change", target: "FEEL-01|b" }).decision).toBe("revert");
+    const other = result(["x"], []);
+    const v = verify(before, other, { mode: "change" });
+    expect(v.decision).toBe("revert");
+    expect(v.reason).toContain("nothing to compare");
+  });
+
+  it("leaves fix mode as strict as before", () => {
+    expect(verify(before, before).decision).toBe("revert");
+  });
+});

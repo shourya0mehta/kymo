@@ -122,8 +122,11 @@
           <p>Only the interactions you touched, so checking a fix takes seconds.</p>
           <div class="cmd"><code>kymo audit --trace .kymo/trace.json --only slow-ack</code></div>
           <h3>Keep or revert</h3>
-          <p>Exit 0 keeps the change. Exit 3 means put it back.</p>
+          <p>Exit 0 keeps the fix. Exit 3 means put it back.</p>
           <div class="cmd"><code>kymo verify --before before.json --after after.json --target FEEL-01-5c130</code></div>
+          <h3>Not a fix?</h3>
+          <p>For a new feature or a redesign, check that nothing got worse instead.</p>
+          <div class="cmd"><code>kymo verify --before before.json --after after.json --change</code></div>
         </div>
       </div>
     </div>

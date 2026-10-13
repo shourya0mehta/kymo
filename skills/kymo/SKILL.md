@@ -1,6 +1,6 @@
 ---
 name: kymo
-description: Polish how a web app feels, with proof. Drives the running app in a real browser (presses, typing, Tab, hover, dialogs, scrolling, desktop and mobile), measures feedback latency, dead clicks, long frames, layout shift, teleports, pops and blink-outs, motion and easing, reduced motion, focus, target size, pending and error states and the template look, points each finding at its source line, then fixes findings one at a time and keeps only the fixes that measurably help. Use when asked to smooth over, polish, add motion or transitions, or improve quality of life in a web app the user is building.
+description: Polish how a web app feels, with proof. Drives the running app in a real browser (presses, typing, Tab, hover, dialogs, scrolling, desktop and mobile), measures feedback latency, dead clicks, long frames, layout shift, teleports, pops and blink-outs, motion and easing, reduced motion, focus, target size, pending and error states and the template look, points each finding at its source line, then fixes findings one at a time and keeps only the fixes that measurably help. Also checks that a feature, redesign or motion pass did not make the app feel worse. Use when asked to smooth over, polish, add motion or transitions, or improve quality of life in a web app the user is building, or to check that a UI change broke nothing.
 ---
 
 # kymo
@@ -124,6 +124,25 @@ git switch -
 Revert the first commit where it appears (`git revert <sha>`). If no commit reproduces it, report it as noise.
 
 Tell the user: how many findings were fixed and kept, how many were reverted and why, what is left for a human, and the measured changes that matter (for example feedback on Save went from 317 ms to 12 ms). Point them at `.kymo/report.html` from the final run.
+
+## 7. Changes that are not fixes
+
+When the user asks for something new rather than a fix (a feature, a redesign, a motion pass, a new component), `verify --target` is the wrong test: it only keeps changes that resolve findings. Use change mode instead. It keeps the change if nothing new appeared and no interaction got slower, across the interactions both runs share.
+
+```bash
+npx kymo audit --save-as before-change            # before you touch anything
+# ... make the change ...
+npx kymo audit --save-as after-change             # a full audit, so new controls are found and measured
+npx kymo verify --before .kymo/runs/before-change.json --after .kymo/runs/after-change.json --change
+```
+
+- Run a full audit after the change, not `--only`: the change can add controls, and their findings count as introduced.
+- Exit 0 prints `KEEP (no regressions)` with the number of interactions compared. Tell the user that number, and anything listed as faster or resolved.
+- Exit 3 lists what was introduced or got slower. Fix those with the loop in section 5 (they are ordinary findings now), then run the change check again. The timing-noise rule from section 5 applies to slower feedback here too.
+- `Gone from the after-run` lists controls the change removed or renamed. That is not a failure, but mention it so the user can confirm it was intended.
+- Never pass `--target` and `--change` together; kymo refuses.
+
+New motion the user asked for still follows section 3 and the constraints in section 5: tokens, transform and opacity, a reduced-motion path, short decelerating entrances, and not an entrance on every section.
 
 ## In CI
 

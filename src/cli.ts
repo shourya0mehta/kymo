@@ -20,7 +20,7 @@ import type { AuditResult, Config, Interaction, Severity } from "./types.js";
 type Args = { _: string[]; [k: string]: string | boolean | string[] };
 
 /** Flags that never take a value, so `--update-baseline http://...` keeps the URL as the URL. */
-const BOOLEAN_FLAGS = new Set(["update-baseline", "no-screens", "json", "help"]);
+const BOOLEAN_FLAGS = new Set(["update-baseline", "no-screens", "json", "help", "change"]);
 
 function parseArgs(argv: string[]): Args {
   const out: Args = { _: [] };
@@ -62,8 +62,11 @@ Usage
       --save-as <name>         Also save the run as <out>/runs/<name>.json
       --fail-on <level>        Exit 1 if any finding is at least this severe (error|warning|suggestion)
       --no-screens             Skip before/after screenshots
-  kymo verify --before <run.json> --after <run.json> [--target <id,id>]
+  kymo verify --before <run.json> --after <run.json> [--target <id,id> | --change]
                         Keep or revert a change. Exit 0 = keep, 3 = revert.
+      --target <id,id>         A fix: keep it only if these findings are resolved and nothing broke
+      --change                 Not a fix (a feature, restyle or motion pass): keep it if nothing new
+                               appeared and nothing got slower
   kymo ci [url]         Audit, compare with a baseline, write a summary and SARIF. Exit 1 on new
                         findings at --fail-on or above.
       --baseline <file>        Run to compare with (default .kymo/baseline.json if present)
@@ -221,7 +224,10 @@ async function main() {
   if (cmd === "verify") {
     const before = JSON.parse(readFileSync(String(args.before), "utf8")) as AuditResult;
     const after = JSON.parse(readFileSync(String(args.after), "utf8")) as AuditResult;
-    const v = verify(before, after, { target: str(args.target)?.split(",").map((t) => t.trim()).filter(Boolean) });
+    const v = verify(before, after, {
+      target: str(args.target)?.split(",").map((t) => t.trim()).filter(Boolean),
+      mode: args.change ? "change" : "fix",
+    });
     process.stdout.write((args.json ? JSON.stringify(v, null, 2) : formatVerify(v)) + "\n");
     process.exitCode = v.decision === "keep" ? 0 : 3;
     return;

@@ -1,7 +1,7 @@
 {
   "before": 5,
   "stat": "findings on this page before launch. Three were the page's, two were kymo's own. All fixed and checked with kymo verify.",
-  "summary": "Desktop and phone, 35 interactions, about two minutes. kymo verify kept every fix: 3 resolved, nothing new, nothing slower. After the motion pass it ran again: 61 scroll entrances per viewport, all under 500 ms and decelerating, and still 0 findings.",
+  "summary": "Desktop and phone, 35 interactions, about two minutes. kymo verify kept every fix: 3 resolved, nothing new, nothing slower. Then came a motion pass: 61 scroll entrances per viewport, all under 500 ms and decelerating, and kymo verify --change found no regressions across all 33 interactions.",
   "items": [
     "Dead click (FEEL-03). The Archive button in the focus demo did nothing when pressed. It now answers with \"Archived\".",
     "Teleport (MOT-09). The Copy button jumped 25 px sideways when its label grew to \"Selected\". It now has a fixed width.",
