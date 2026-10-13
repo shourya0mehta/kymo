@@ -6,7 +6,10 @@ import { extname, join, dirname, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
-const types = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".json": "application/json" };
+const types = {
+  ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".json": "application/json",
+  ".svg": "image/svg+xml", ".woff2": "font/woff2", ".png": "image/png",
+};
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export function startZoo(port = 4173, dir = root) {
@@ -24,8 +27,10 @@ export function startZoo(port = 4173, dir = root) {
     }
     const path = normalize(url.pathname === "/" ? "/index.html" : url.pathname);
     if (path.includes("..")) { res.writeHead(400); return res.end(); }
+    // the report typeface lives with the package's other assets
+    const file = path.startsWith("/fonts/") ? join(dir, "..", "assets", path) : join(dir, path);
     try {
-      const body = await readFile(join(dir, path));
+      const body = await readFile(file);
       res.writeHead(200, { "content-type": types[extname(path)] ?? "application/octet-stream" });
       res.end(body);
     } catch {

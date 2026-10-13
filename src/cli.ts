@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
+import { join, resolve, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import { audit, VERSION } from "./audit.js";
 import { loadConfig } from "./config.js";
@@ -11,9 +11,16 @@ import { inferProfile, PROFILES, type ProfileName } from "./profile/infer.js";
 import { renderTokensCss, renderTokensJson } from "./profile/tokens.js";
 import { RULES } from "./rules.js";
 import { formatScore, scoreAgainstAnswers, ZOO_DIR } from "./eval.js";
+import { atLeast, ciMarkdown, compareRuns, SEVERITIES, toSarif } from "./ci.js";
+import { banner, formatSummary, Recorder, useColor } from "./term.js";
+import { replayHint } from "./replay.js";
+import type { AuditOptions } from "./audit.js";
 import type { AuditResult, Config, Interaction, Severity } from "./types.js";
 
 type Args = { _: string[]; [k: string]: string | boolean | string[] };
+
+/** Flags that never take a value, so `--update-baseline http://...` keeps the URL as the URL. */
+const BOOLEAN_FLAGS = new Set(["update-baseline", "no-screens", "json", "help"]);
 
 function parseArgs(argv: string[]): Args {
   const out: Args = { _: [] };
@@ -22,36 +29,53 @@ function parseArgs(argv: string[]): Args {
     if (a.startsWith("--")) {
       const [k, v] = a.slice(2).split("=", 2);
       if (v !== undefined) out[k] = v;
-      else if (i + 1 < argv.length && !argv[i + 1].startsWith("--")) out[k] = argv[++i];
+      else if (!BOOLEAN_FLAGS.has(k) && i + 1 < argv.length && !argv[i + 1].startsWith("--")) out[k] = argv[++i];
       else out[k] = true;
     } else out._.push(a);
   }
   return out;
 }
 
+function severityArg(v: unknown, fallback?: Severity): Severity | undefined {
+  if (v === undefined) return fallback;
+  if (typeof v === "string" && (SEVERITIES as string[]).includes(v)) return v as Severity;
+  throw new Error(`--fail-on takes error, warning or suggestion (got "${String(v)}")`);
+}
+
 const str = (v: unknown) => (typeof v === "string" ? v : undefined);
 
-const HELP = `kymo ${VERSION}: measure how a web app feels, then keep only the fixes that help.
+const HELP = `kymo ${VERSION}: measures how a web app feels in a real browser, then keeps only the fixes that help.
 
 Usage
-  kymo audit [url]      Drive the app, measure, write .kymo/latest.json and report.html
+  kymo audit [url]      Press every control, type into fields, Tab, hover and scroll; measure;
+                        write .kymo/latest.json and report.html
       --config <file>          Config file (default: kymo.config.json if present)
       --routes /,/settings     Routes to visit
+      --viewports desktop,mobile
+                               Presets (desktop, laptop, tablet, mobile) or WIDTHxHEIGHT
+      --concurrency <n>        Pages driven at once (default: half the cores, at most 4)
       --trace <file>           Replay a saved trace instead of discovering controls
       --only <a,b>             With --trace: replay only matching interactions (group, #id, key,
-                               or position in the trace),
-                               or @app for app-wide rules only. Saves to runs/<name>.json/.html.
+                               or position in the trace), or @app for app-wide rules only.
+                               Saves to runs/<name>.json/.html.
       --out <dir>              Output folder (default .kymo)
       --save-as <name>         Also save the run as <out>/runs/<name>.json
       --fail-on <level>        Exit 1 if any finding is at least this severe (error|warning|suggestion)
       --no-screens             Skip before/after screenshots
   kymo verify --before <run.json> --after <run.json> [--target <id,id>]
-                             Keep or revert a change. Exit 0 = keep, 3 = revert.
+                        Keep or revert a change. Exit 0 = keep, 3 = revert.
+  kymo ci [url]         Audit, compare with a baseline, write a summary and SARIF. Exit 1 on new
+                        findings at --fail-on or above.
+      --baseline <file>        Run to compare with (default .kymo/baseline.json if present)
+      --update-baseline        Save this run as the baseline
+      --fail-on <level>        Default warning
+      --sarif <file>           Write SARIF 2.1.0 for code scanning
+      --markdown <file>        Write the summary as Markdown (also appended to $GITHUB_STEP_SUMMARY)
   kymo profile [url] [--write [file]]
-                             Infer a motion profile and optionally write its token file
+                        Infer a motion profile and optionally write its token file
       --as <name>              Force a profile: productive, expressive, calm, physical
   kymo eval [--port 4199]
-                             Audit the bundled jank zoo and score it against its answer key
+                        Audit the bundled jank zoo and score it against its answer key
   kymo zoo [--port 4173] Serve the jank zoo
   kymo rules            List the rules and their evidence
 `;
@@ -59,11 +83,41 @@ Usage
 function configFrom(args: Args): Config {
   const url = args._[1];
   const routes = str(args.routes)?.split(",").map((r) => r.trim()).filter(Boolean);
+  const conc = str(args.concurrency);
+  if (conc !== undefined && !/^[1-9]\d*$/.test(conc)) throw new Error(`--concurrency takes a whole number of pages, 1 or more (got "${conc}")`);
   return loadConfig(str(args.config), {
     baseUrl: url,
     routes,
     outDir: str(args.out),
+    viewports: str(args.viewports),
+    concurrency: conc ? Number(conc) : undefined,
   });
+}
+
+/** Run an audit with the live recording strip on a terminal, plain progress lines elsewhere. */
+async function runAudit(config: Config, opts: Omit<AuditOptions, "log" | "onRun"> = {}): Promise<AuditResult> {
+  const color = useColor(process.stderr);
+  const rec = new Recorder(process.stderr, color);
+  process.stderr.write(
+    banner(
+      [
+        `kymo ${VERSION}`,
+        `feeling out ${config.baseUrl}`,
+        `${config.routes.length === 1 ? "1 route" : `${config.routes.length} routes`}, ${config.viewports.map((v) => v.name).join(" + ")}, ${config.concurrency} at a time`,
+      ],
+      "busy",
+      color,
+    ) + "\n\n",
+  );
+  try {
+    return await audit(config, {
+      ...opts,
+      log: (m) => rec.phase(m.trimStart()),
+      onRun: (e) => rec.run(e, config.thresholds.feedbackMs),
+    });
+  } finally {
+    rec.end();
+  }
 }
 
 function writeRun(result: AuditResult, outDir: string, saveAs?: string, writeTrace = true) {
@@ -81,17 +135,6 @@ function matchesOnly(i: Interaction, o: string, index: number): boolean {
   return i.key === o || i.key.includes(o) || i.target.group === o || i.target.css === o || (!!i.target.id && `#${i.target.id}` === o);
 }
 
-/** What to pass to --only to replay the interaction behind a finding. */
-function replayHint(result: AuditResult, f: AuditResult["findings"][number]): string {
-  if (!f.interaction) return "@app";
-  const n = result.trace.findIndex((t) => t.key === f.interaction);
-  if (n < 0) return JSON.stringify(f.interaction);
-  const i = result.trace[n];
-  if (i.target.group && /^[\w-]+$/.test(i.target.group)) return i.target.group;
-  if (i.target.id && /^[\w-]+$/.test(i.target.id)) return `#${i.target.id}`;
-  return String(n + 1); // its position in trace.json: shell-safe when the name is not
-}
-
 function writeTargeted(result: AuditResult, outDir: string, name?: string): string {
   mkdirSync(join(outDir, "runs"), { recursive: true });
   const base = join(outDir, "runs", name ?? `only-${result.startedAt.replace(/[:.]/g, "-")}`);
@@ -101,14 +144,7 @@ function writeTargeted(result: AuditResult, outDir: string, name?: string): stri
 }
 
 function summary(result: AuditResult): string {
-  const lines = [`${result.findings.length} finding(s): ${result.counts.error} error, ${result.counts.warning} warning, ${result.counts.suggestion} suggestion`];
-  for (const f of result.findings) {
-    lines.push(`  ${f.id.padEnd(15)} ${f.severity.padEnd(10)} ${f.message}`);
-    lines.push(`  ${"".padEnd(15)} replay: --only ${replayHint(result, f)}   verify: --target ${f.id}`);
-  }
-  const broken = result.runs.filter((r) => r.error);
-  if (broken.length) lines.push(`  (${broken.length} run(s) had problems; see latest.json)`);
-  return lines.join("\n");
+  return formatSummary(result, { color: useColor(process.stdout), replay: (f) => replayHint(result, f) });
 }
 
 const SEV_RANK: Record<Severity, number> = { error: 3, warning: 2, suggestion: 1 };
@@ -136,8 +172,7 @@ async function main() {
       if (!trace.length && !appOnly) throw new Error(`--only ${only.join(",")} matched no interactions in the trace`);
       log(appOnly && !trace.length ? "Checking app-wide rules only (no interactions)" : `Replaying ${trace.length} of the trace's interactions`);
     }
-    log(`Auditing ${config.baseUrl}`);
-    const result = await audit(config, { trace, log, screenshots: !args["no-screens"] });
+    const result = await runAudit(config, { trace, screenshots: !args["no-screens"] });
     const name = str(args["save-as"]);
     if (only?.length) {
       // A targeted run is a measurement for verify, not the app's report: keep latest.json and report.html as they were.
@@ -149,8 +184,37 @@ async function main() {
       process.stdout.write(summary(result) + "\n");
       log(`Report: ${resolve(config.outDir, "report.html")}`);
     }
-    const failOn = str(args["fail-on"]) as Severity | undefined;
+    const failOn = severityArg(args["fail-on"]);
     if (failOn && result.findings.some((f) => SEV_RANK[f.severity] >= SEV_RANK[failOn])) process.exitCode = 1;
+    return;
+  }
+
+  if (cmd === "ci") {
+    const config = configFrom(args);
+    const failOn = severityArg(args["fail-on"], "warning")!;
+    const baselinePath = str(args.baseline) ?? join(config.outDir, "baseline.json");
+    const baseline = existsSync(baselinePath) ? (JSON.parse(readFileSync(baselinePath, "utf8")) as AuditResult) : null;
+    if (!baseline && args.baseline) log(`No baseline at ${baselinePath}; every finding counts as new.`);
+    const result = await runAudit(config, { screenshots: !args["no-screens"] });
+    writeRun(result, config.outDir, str(args["save-as"]));
+    const cmp = compareRuns(result, baseline);
+    const md = ciMarkdown(result, cmp, { failOn });
+    const mdPath = str(args.markdown);
+    if (mdPath) writeFileSync(mdPath, md);
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + "\n");
+    const sarifPath = str(args.sarif);
+    if (sarifPath) {
+      writeFileSync(sarifPath, JSON.stringify(toSarif(result, { only: cmp.baseline ? cmp.added : undefined }), null, 2));
+      log(`SARIF: ${sarifPath}`);
+    }
+    if (args["update-baseline"]) {
+      mkdirSync(dirname(baselinePath), { recursive: true });
+      writeFileSync(baselinePath, JSON.stringify(result, null, 2));
+      log(`Baseline saved to ${baselinePath}`);
+    }
+    process.stdout.write(summary(result) + "\n\n" + md + "\n");
+    const failing = cmp.added.filter((f) => atLeast(f, failOn));
+    if (failing.length && !args["update-baseline"]) process.exitCode = 1;
     return;
   }
 
@@ -193,9 +257,9 @@ async function main() {
     const server = await startZoo(port);
     try {
       const outDir = str(args.out) ?? join(".kymo", "eval");
-      const config = loadConfig(undefined, { baseUrl: `http://localhost:${port}`, routes: ["/"], outDir });
+      const config = loadConfig(undefined, { baseUrl: `http://localhost:${port}`, routes: ["/", "/slop.html"], outDir });
       if (existsSync("kymo.config.json")) log("Note: eval ignores kymo.config.json and audits the bundled zoo.");
-      const result = await audit({ ...config, groupAttribute: "data-kymo-group" }, { log });
+      const result = await runAudit({ ...config, groupAttribute: "data-kymo-group" });
       writeRun(result, outDir, "zoo");
       const score = scoreAgainstAnswers(result);
       writeFileSync(join(outDir, "score.json"), JSON.stringify(score, null, 2));

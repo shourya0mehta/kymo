@@ -4,12 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Jank zoo</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cpath d=%22M10 18 V50 A21 6.5 0 0 0 52 50 V18 Z%22 fill=%22%231E1A15%22/%3E%3Cellipse cx=%2232%22 cy=%2218%22 rx=%2221%22 ry=%226.5%22 fill=%22%23463C30%22/%3E%3Ccircle cx=%2225.5%22 cy=%2231%22 r=%222.8%22 fill=%22%23F2EEE4%22/%3E%3Ccircle cx=%2238.5%22 cy=%2231%22 r=%222.8%22 fill=%22%23F2EEE4%22/%3E%3C/svg%3E">
   <link rel="stylesheet" href="zoo.css">
 </head>
 <body>
   <header>
+    <svg viewBox="0 0 64 64" aria-hidden="true"><defs><clipPath id="zd"><path d="M10 18 V50 A21 6.5 0 0 0 52 50 V18 Z"/></clipPath></defs><rect x="29.6" y="6" width="4.8" height="10" rx="1.2" fill="#1E1A15"/><circle cx="32" cy="6" r="3.4" fill="#1E1A15"/><path d="M60.5 30 L52.5 41.5" stroke="#1E1A15" stroke-width="2.2" stroke-linecap="round"/><circle cx="60.5" cy="30" r="2.2" fill="#1E1A15"/><path d="M10 18 V50 A21 6.5 0 0 0 52 50 V18 Z" fill="#1E1A15"/><ellipse cx="32" cy="18" rx="21" ry="6.5" fill="#463C30" stroke="#1E1A15" stroke-width="1.6"/><circle cx="25.5" cy="31" r="2.8" fill="#F2EEE4"/><circle cx="38.5" cy="31" r="2.8" fill="#F2EEE4"/><g clip-path="url(#zd)"><path d="M6 42.5 H26.5 L29.6 36 L33.6 48 L36.6 41 H60" fill="none" stroke="#F2EEE4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
     <h1>Jank zoo</h1>
-    <p>Planted feel defects next to clean twins, each with an answer key in <code>answers.json</code>. kymo is scored on how many it catches (recall) and how many clean exhibits it leaves alone (precision).</p>
+    <p>Feel defects planted beside clean twins, each with its answer in <code>answers.json</code>. kymo is scored on how many plants it catches and how many twins it leaves alone. A second route, <a href="/slop.html">slop.html</a>, is a landing page built from every template default at once.</p>
+    <p class="legend"><span class="d">Planted defect</span><span class="c">Clean twin</span></p>
   </header>
 
   <main>
@@ -119,6 +122,105 @@
       </div>
     </section>
 
+
+    <section class="card rm-safe" data-kymo-group="vanish-notice">
+      <span class="tag defect">Planted: blink-out</span>
+      <h2>Trial notice</h2>
+      <p>Dismissing removes the notice in a single frame.</p>
+      <button class="btn press" type="button" id="vanish-btn">Dismiss notice</button>
+      <div class="notice" id="vanish-notice">Your trial ends in 3 days. Add a card to keep this workspace.</div>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="long-task">
+      <span class="tag defect">Planted: long frame</span>
+      <h2>Sort</h2>
+      <p>Presses at once, then freezes the page for 250 ms.</p>
+      <button class="btn press" type="button" id="sort-btn">Sort by date</button>
+      <p class="status" id="sort-state">Unsorted</p>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="typing-lag">
+      <span class="tag defect">Planted: typing lag</span>
+      <h2>Search</h2>
+      <p>Each keystroke runs 180 ms of work before the letter shows.</p>
+      <label class="field"><span>Search invoices</span><input type="search" id="lag-input" autocomplete="off"></label>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="eager-validation">
+      <span class="tag defect">Planted: early validation</span>
+      <h2>Sign up</h2>
+      <p>Complains after the first letter, while you are still typing.</p>
+      <label class="field"><span>Email</span><input type="email" id="eager-email" autocomplete="off"></label>
+      <p class="field-error" id="eager-error"></p>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="invisible-focus">
+      <span class="tag defect">Planted: invisible focus</span>
+      <h2>Archive</h2>
+      <p>The focus ring was removed and nothing replaced it.</p>
+      <button class="btn press no-ring" type="button" id="archive-btn">Archive thread</button>
+      <p class="status" id="archive-state"></p>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="tiny-targets">
+      <span class="tag defect">Planted: tiny targets</span>
+      <h2>Formatting</h2>
+      <p>Three 16 px buttons, 2 px apart.</p>
+      <div class="icorow tight">
+        <button class="ico" type="button" aria-pressed="false" aria-label="Bold">B</button><button class="ico" type="button" aria-pressed="false" aria-label="Italic">I</button><button class="ico" type="button" aria-pressed="false" aria-label="Underline">U</button>
+      </div>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="hover-shift">
+      <span class="tag defect">Planted: hover reflow</span>
+      <h2>Follow</h2>
+      <p>Hovering makes the button bolder and wider, which shoves its neighbour.</p>
+      <div class="btnrow">
+        <button class="btn press grow" type="button" id="follow-btn">Follow</button>
+        <button class="btn press" type="button" id="msg-btn">Message</button>
+      </div>
+      <p class="status" id="follow-state"></p>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="tooltip-trap">
+      <span class="tag defect">Planted: unreachable tooltip</span>
+      <h2>Share</h2>
+      <p>The tooltip vanishes as you move onto it, and Escape cannot close it.</p>
+      <span class="tipwrap trap"><button class="btn press" type="button" id="share-btn">Share</button><span class="tip" role="tooltip">Anyone with the link can view this board</span></span>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="dialog-trap">
+      <span class="tag defect">Planted: focus trap missing</span>
+      <h2>Delete project</h2>
+      <p>The dialog leaves focus behind it and ignores Escape.</p>
+      <button class="btn press" type="button" id="trap-open">Delete project...</button>
+      <div class="fake-dialog" id="trap-dialog" role="dialog" aria-label="Delete project">
+        <p>Delete "Q3 roadmap"? This removes 14 boards.</p>
+        <button class="btn press" type="button" id="trap-cancel">Keep project</button>
+      </div>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="nested-menu">
+      <span class="tag defect">Planted: dead menu item</span>
+      <h2>Board actions</h2>
+      <p>One item in the menu is wired to nothing.</p>
+      <div class="menuwrap">
+        <button class="btn press" type="button" id="menu-btn" aria-haspopup="menu" aria-expanded="false">Actions</button>
+        <div class="menu" role="menu" id="menu">
+          <button class="mi" type="button" role="menuitem" id="mi-pin">Pin board</button>
+          <button class="mi" type="button" role="menuitem" id="mi-dup">Duplicate</button>
+        </div>
+      </div>
+      <p class="status" id="menu-state"></p>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="canvas-slow">
+      <span class="tag defect">Planted: slow canvas</span>
+      <h2>Heatmap</h2>
+      <p>Click the canvas: it redraws 300 ms later, and the DOM never changes.</p>
+      <canvas class="heat" id="heat-slow" width="300" height="90" data-kymo-click aria-label="Heatmap, click to cycle"></canvas>
+    </section>
+
     <!-- ===== clean twins ===== -->
     <section class="card rm-safe" data-kymo-group="good-button">
       <span class="tag clean">Clean twin</span>
@@ -157,6 +259,79 @@
       <p>Options fade up with opacity and transform.</p>
       <button class="btn press" type="button" id="good-reveal-btn">Show options</button>
       <div class="reveal" id="good-reveal">Standard, 3 to 5 days<br>Express, next day</div>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="good-dismiss">
+      <span class="tag clean">Clean twin</span>
+      <h2>Trial notice</h2>
+      <p>The notice fades out over 160 ms, then leaves.</p>
+      <button class="btn press" type="button" id="good-dismiss-btn">Dismiss notice</button>
+      <div class="notice" id="good-notice">Your trial ends in 3 days. Add a card to keep this workspace.</div>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="good-form">
+      <span class="tag clean">Clean twin</span>
+      <h2>Sign up</h2>
+      <p>Letters appear at once; errors wait until you leave the field.</p>
+      <label class="field"><span>Email</span><input type="email" id="good-email" autocomplete="off"></label>
+      <p class="field-error" id="good-email-error"></p>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="good-focus">
+      <span class="tag clean">Clean twin</span>
+      <h2>Archive</h2>
+      <p>The outline is replaced by a 2 px ring on keyboard focus.</p>
+      <button class="btn press ring" type="button" id="good-archive-btn">Archive thread</button>
+      <p class="status" id="good-archive-state"></p>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="good-targets">
+      <span class="tag clean">Clean twin</span>
+      <h2>Formatting</h2>
+      <p>32 px buttons with room between them.</p>
+      <div class="icorow roomy">
+        <button class="ico" type="button" aria-pressed="false" aria-label="Bold">B</button><button class="ico" type="button" aria-pressed="false" aria-label="Italic">I</button><button class="ico" type="button" aria-pressed="false" aria-label="Underline">U</button>
+      </div>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="good-hover">
+      <span class="tag clean">Clean twin</span>
+      <h2>Follow</h2>
+      <p>Hover lifts the button with a transform; nothing around it moves.</p>
+      <div class="btnrow">
+        <button class="btn press lift" type="button" id="good-follow-btn">Follow</button>
+        <button class="btn press" type="button" id="good-msg-btn">Message</button>
+      </div>
+      <p class="status" id="good-follow-state"></p>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="good-tooltip">
+      <span class="tag clean">Clean twin</span>
+      <h2>Usage</h2>
+      <p>The tooltip stays while you move onto it, and Escape hides it.</p>
+      <span class="tipwrap good" id="good-tipwrap"><button class="btn press" type="button" id="usage-btn">Usage</button><span class="tip" role="tooltip">1,204 of 5,000 exports used this month</span></span>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="good-modal">
+      <span class="tag clean">Clean twin</span>
+      <h2>Rename board</h2>
+      <p>A native dialog: focus moves in, Escape closes it, focus comes back.</p>
+      <button class="btn press" type="button" id="rename-open">Rename board...</button>
+      <p class="status" id="rename-state">Q3 roadmap</p>
+      <dialog class="real-dialog" id="rename-dialog" aria-label="Rename board">
+        <label class="field"><span>Board name</span><input id="rename-input" value="Q3 roadmap" autocomplete="off"></label>
+        <div class="btnrow">
+          <button class="btn press" type="button" id="rename-cancel">Cancel</button>
+          <button class="btn press" type="button" id="rename-save">Save name</button>
+        </div>
+      </dialog>
+    </section>
+
+    <section class="card rm-safe" data-kymo-group="good-canvas">
+      <span class="tag clean">Clean twin</span>
+      <h2>Heatmap</h2>
+      <p>Click the canvas: it redraws in the next frame.</p>
+      <canvas class="heat" id="heat-fast" width="300" height="90" data-kymo-click aria-label="Heatmap, click to cycle"></canvas>
     </section>
   </main>
 

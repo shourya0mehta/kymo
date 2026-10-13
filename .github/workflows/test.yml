@@ -1,0 +1,30 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - name: Score kymo on the jank zoo
+        run: npx tsx src/cli.ts eval --out .kymo/eval
+      - name: Precision and recall must stay at 100%
+        run: node -e 'const s=require("./.kymo/eval/score.json"); console.log(`precision ${s.precision}, recall ${s.recall}`); if (s.precision < 1 || s.recall < 1) process.exit(1)'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zoo-report
+          path: .kymo/eval

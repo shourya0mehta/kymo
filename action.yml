@@ -1,0 +1,75 @@
+name: kymo
+description: Measure how your web app feels on every pull request, and fail on new feel regressions.
+author: Shourya Mehta
+branding:
+  icon: activity
+  color: gray-dark
+
+inputs:
+  url:
+    description: URL of the running app. Start it in an earlier step (for example `npm run preview &`).
+    required: true
+  routes:
+    description: Comma-separated routes to visit. Defaults to the config file, or /.
+    required: false
+  viewports:
+    description: Comma-separated viewports (desktop, laptop, tablet, mobile, or WIDTHxHEIGHT). Defaults to the config file, or desktop.
+    required: false
+  config:
+    description: Path to kymo.config.json, if you have one.
+    required: false
+  baseline:
+    description: Baseline run to compare against. Findings already in it do not fail the build.
+    required: false
+    default: .kymo/baseline.json
+  fail-on:
+    description: Fail on new findings at this severity or above (error, warning, suggestion).
+    required: false
+    default: warning
+  sarif:
+    description: Where to write SARIF for code scanning. Upload it with github/codeql-action/upload-sarif.
+    required: false
+    default: kymo.sarif
+  out:
+    description: Output folder for the report, run JSON and screenshots.
+    required: false
+    default: .kymo
+
+outputs:
+  report:
+    description: Path to the HTML report.
+    value: ${{ inputs.out }}/report.html
+  sarif:
+    description: Path to the SARIF file.
+    value: ${{ inputs.sarif }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Install kymo
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        npm ci --no-audit --no-fund
+        npx playwright install --with-deps chromium
+    - name: Measure
+      shell: bash
+      env:
+        KYMO_URL: ${{ inputs.url }}
+        KYMO_ROUTES: ${{ inputs.routes }}
+        KYMO_VIEWPORTS: ${{ inputs.viewports }}
+        KYMO_CONFIG: ${{ inputs.config }}
+        KYMO_BASELINE: ${{ inputs.baseline }}
+        KYMO_FAIL_ON: ${{ inputs.fail-on }}
+        KYMO_SARIF: ${{ inputs.sarif }}
+        KYMO_OUT: ${{ inputs.out }}
+      run: |
+        mkdir -p "$KYMO_OUT"
+        args=(ci "$KYMO_URL" --baseline "$KYMO_BASELINE" --fail-on "$KYMO_FAIL_ON" --sarif "$KYMO_SARIF" --out "$KYMO_OUT" --markdown "$KYMO_OUT/summary.md")
+        if [ -n "$KYMO_ROUTES" ]; then args+=(--routes "$KYMO_ROUTES"); fi
+        if [ -n "$KYMO_VIEWPORTS" ]; then args+=(--viewports "$KYMO_VIEWPORTS"); fi
+        if [ -n "$KYMO_CONFIG" ]; then args+=(--config "$KYMO_CONFIG"); fi
+        node "${{ github.action_path }}/dist/cli.js" "${args[@]}"

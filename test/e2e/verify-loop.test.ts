@@ -1,5 +1,5 @@
 // End-to-end: audit the zoo, try a naive fix and a proper fix for the teleporting panel,
-// and check that verify reverts the first and keeps the second. Takes about 1.5 minutes.
+// and check that verify reverts the first and keeps the second. Takes about 2 minutes.
 import { describe, expect, it } from "vitest";
 import { cpSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -21,7 +21,12 @@ describe("fix and verify loop", () => {
     const original = readFileSync(css, "utf8");
     const server = await startZoo(PORT, dir);
     try {
-      const config = loadConfig(undefined, { baseUrl: `http://localhost:${PORT}`, outDir: join(dir, ".kymo") });
+      // Only the press probes matter here; the rest would triple the run time.
+      const config = loadConfig(undefined, {
+        baseUrl: `http://localhost:${PORT}`,
+        outDir: join(dir, ".kymo"),
+        probes: { typing: false, hover: false, dialogs: false, nested: false, page: false, canvas: false, failure: false },
+      });
       const before = await audit(config, { screenshots: false });
       const target = before.findings.find((f) => f.rule === "MOT-09" && f.group === "teleport-panel");
       expect(target).toBeTruthy();
@@ -46,5 +51,5 @@ describe("fix and verify loop", () => {
     } finally {
       server.close();
     }
-  }, 240_000);
+  }, 420_000);
 });

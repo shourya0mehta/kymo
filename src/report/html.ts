@@ -1,8 +1,15 @@
+// The kymo report: one self-contained HTML file. Light theme is ink on recording paper,
+// dark theme is a scratch on smoked paper, the two media a kymograph writes on.
 import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
-import type { AuditResult, Finding, Severity } from "../types.js";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { AuditResult, Finding, InteractionRun, Severity, SourceInfo } from "../types.js";
 import { RULES } from "../rules.js";
+import { markSvg, markSvgPaper, moodOf } from "../brand.js";
+import { replayHint } from "../replay.js";
+import { durationRuler, easingGlyph, interactionTrace, responseMs, sessionStrip, SEV_GLYPH, sparkline } from "./trace.js";
 
+const here = dirname(fileURLToPath(import.meta.url));
 const esc = (s: unknown) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
@@ -13,135 +20,330 @@ function inlineImage(outDir: string, rel?: string): string | null {
   return `data:image/jpeg;base64,${readFileSync(p).toString("base64")}`;
 }
 
-const SEV_LABEL: Record<Severity, string> = { error: "Error", warning: "Warning", suggestion: "Suggestion" };
+/** The report typeface, embedded so the file looks the same offline. Falls back to Georgia. */
+function fontFace(): string {
+  for (const p of [join(here, "..", "..", "assets", "fonts", "SourceSerif4-latin-wght.woff2"), join(here, "..", "assets", "fonts", "SourceSerif4-latin-wght.woff2")]) {
+    if (existsSync(p)) {
+      return `@font-face{font-family:"Source Serif 4";font-style:normal;font-weight:200 900;font-display:swap;src:url(data:font/woff2;base64,${readFileSync(p).toString("base64")}) format("woff2")}`;
+    }
+  }
+  return "";
+}
 
-function findingHtml(f: Finding, outDir: string): string {
+const SEV_LABEL: Record<Severity, string> = { error: "Error", warning: "Warning", suggestion: "Suggestion" };
+const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+
+function sourceList(s: SourceInfo | undefined): string {
+  if (!s) return "";
+  const items: string[] = [];
+  if (s.markup) items.push(`<li><code>${esc(s.markup)}</code><span>where the element is written</span></li>`);
+  if (s.script) items.push(`<li><code>${esc(s.script)}</code><span>where the long frame spent its time</span></li>`);
+  if (s.handler) items.push(`<li><code>${esc(s.handler)}</code><span>its event handler</span></li>`);
+  for (const r of s.rules ?? []) items.push(`<li><code>${esc(r.file)}:${r.line}</code><span><code class="sel">${esc(r.selector)}</code>${r.motion ? " sets its motion" : ""}</span></li>`);
+  return items.length ? `<ul class="src">${items.join("")}</ul>` : "";
+}
+
+function metricsList(f: Finding): string {
+  const entries = Object.entries(f.metrics ?? {}).filter(([, v]) => v !== null && v !== undefined && v !== "" && v !== false);
+  if (!entries.length) return "";
+  return `<details class="metrics"><summary>Measurements</summary><dl>${entries.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></details>`;
+}
+
+function findingHtml(f: Finding, result: AuditResult, outDir: string, runFor: (key?: string) => InteractionRun | undefined): string {
+  const rule = RULES[f.rule];
   const before = inlineImage(outDir, f.shots?.before);
   const after = inlineImage(outDir, f.shots?.after);
-  const metrics = f.metrics
-    ? Object.entries(f.metrics)
-        .filter(([, v]) => v !== null && v !== undefined && v !== "" && v !== false)
-        .map(([k, v]) => `<span><b>${esc(k)}</b> ${esc(v)}</span>`)
-        .join("")
-    : "";
+  const run = runFor(f.interaction);
+  const trace = run && (run.interaction.kind === "click" || run.interaction.kind === "type") ? interactionTrace(run, { budgetMs: result.thresholds?.feedbackMs, id: f.id }) : "";
+  const where: string[] = [];
+  if (f.group && !f.group.startsWith("@")) where.push(`<span class="grp">${esc(f.group)}</span>`);
+  if (f.route) where.push(`on <code>${esc(f.route)}</code>`);
+  if (result.viewports.length > 1 && f.viewports?.length) where.push(`at ${esc(f.viewports.join(" and "))}`);
+  const via = f.interaction ? `<p class="via">Seen while ${viaText(f, run)}</p>` : "";
+  const hint = replayHint(result, f);
   const shots =
     before || after
-      ? `<details class="frames"><summary>Before and after the click</summary><div class="shots">${
-          before ? `<figure><img src="${before}" alt="Before the click"><figcaption>Before</figcaption></figure>` : ""
-        }${after ? `<figure><img src="${after}" alt="After the watch window"><figcaption>After</figcaption></figure>` : ""}</div></details>`
+      ? `<details class="shots"><summary>Before and after</summary><div class="frames">${
+          before ? `<figure><img src="${before}" alt="Before the interaction" loading="lazy"><figcaption>Before</figcaption></figure>` : ""
+        }${after ? `<figure><img src="${after}" alt="After the watch window" loading="lazy"><figcaption>After</figcaption></figure>` : ""}</div></details>`
       : "";
-  return `<article class="finding sev-${f.severity}" id="${esc(f.key)}">
-  <div class="rule"><code>${esc(f.rule)}</code><span class="sev">${SEV_LABEL[f.severity]}</span><span class="fid">${esc(f.id)}</span></div>
-  <div class="body">
+  return `<article class="finding" data-sev="${f.severity}" id="${esc(f.id)}">
+  <header>
+    <p class="kicker">${SEV_GLYPH[f.severity]}<span class="sev">${SEV_LABEL[f.severity]}</span><span class="rid">${esc(f.rule)}</span>${where.length ? `<span class="where">${where.join(" ")}</span>` : ""}</p>
     <h3>${esc(f.title)}</h3>
-    <p class="msg">${esc(f.message)}</p>
-    <p class="where">${f.group && f.group !== "@app" ? `<span class="grp">${esc(f.group)}</span>` : ""}${
-      f.element ? `<code>${esc(f.element.css)}</code>` : "<span>whole app</span>"
-    }${f.interaction ? ` <span class="via">after clicking <code>${esc(f.interaction.slice((f.route ?? "").length).trim())}</code> on ${esc(f.route ?? "/")}</span>` : ""}</p>
-    ${metrics ? `<p class="metrics">${metrics}</p>` : ""}
-    <p class="fix"><b>Fix</b> ${esc(f.fix)}</p>
-    <p class="ev">Evidence: ${esc(f.evidence)}. <a href="${esc(RULES[f.rule]?.source)}">Source</a></p>
-    ${shots}
+  </header>
+  <p class="msg">${esc(f.message)}</p>
+  ${trace ? `<figure class="trace">${trace}</figure>` : ""}
+  ${via}
+  ${f.element && f.element.css !== run?.interaction.target.css ? `<p class="el"><code>${esc(f.element.css)}</code></p>` : ""}
+  ${sourceList(f.source)}
+  <p class="fix">${esc(f.fix)}</p>
+  <p class="ev">Evidence: ${esc(f.evidence)}. ${rule ? `${esc(rule.threshold.replace(/\.$/, ""))}. <a href="${esc(rule.source)}">Source</a>` : ""}</p>
+  ${shots}
+  ${metricsList(f)}
+  <div class="cmds">
+    <button type="button" class="copy" data-copy="${esc(f.id)}" title="Copy the finding id">${esc(f.id)}</button>
+    <code>kymo audit --trace .kymo/trace.json --only ${esc(hint)}</code>
+    <code>kymo verify --before before.json --after after.json --target ${esc(f.id)}</code>
   </div>
 </article>`;
 }
 
+function viaText(f: Finding, run?: InteractionRun): string {
+  const key = f.interaction ?? "";
+  const kind = run?.interaction.kind;
+  const name = esc(key.replace(/^\[[\w.-]+\] /, "").slice((f.route ?? "").length).trim().replace(/ @(type|dialog|hover|page)$/, ""));
+  if (kind === "page" || key.endsWith("@page")) return "loading, Tabbing through and scrolling the page";
+  if (kind === "type") return `typing into <code>${name}</code>`;
+  if (kind === "dialog") return `opening <code>${name}</code> and pressing Escape`;
+  if (kind === "hover") return `hovering <code>${name}</code>`;
+  return `pressing <code>${name}</code>`;
+}
+
+function indexHtml(findings: Finding[]): string {
+  const byRule = new Map<string, Finding[]>();
+  for (const f of findings) byRule.set(f.rule, [...(byRule.get(f.rule) ?? []), f]);
+  const items = [...byRule.entries()]
+    .map(([id, fs]) => `<li data-sev="${fs[0].severity}"><a href="#${esc(fs[0].id)}">${SEV_GLYPH[fs[0].severity]}<span class="t">${esc(RULES[id]?.title ?? id)}</span><span class="n">${fs.length}</span></a></li>`)
+    .join("");
+  return `<nav class="index" aria-label="Findings by rule"><ul>${items}</ul></nav>`;
+}
+
+const LIGHT = `--paper:#F5F7F2;--paper-2:#ECF1EA;--ink:#17233B;--pencil:#5B6577;--hair:#DCE5DD;--g:#DEE9E0;--G:#C2D6C7;--red:#C4302B;--ochre:#9C6106;--mark-ink:#17233B;--code:#E7EEE7`;
+const DARK = `--paper:#16130F;--paper-2:#211D17;--ink:#ECE5D5;--pencil:#A69E8F;--hair:#332D25;--g:rgba(236,229,213,.055);--G:rgba(236,229,213,.12);--red:#EE6B59;--ochre:#E0A847;--mark-ink:#ECE5D5;--code:#2A251E`;
+
 export function renderReport(result: AuditResult, outDir: string): string {
   const { counts } = result;
   const total = result.findings.length;
+  const mood = moodOf(counts);
   const normal = result.runs.filter((r) => r.mode === "normal");
-  const findingsByInteraction = new Map<string, number>();
-  for (const f of result.findings) if (f.interaction) findingsByInteraction.set(f.interaction, (findingsByInteraction.get(f.interaction) ?? 0) + 1);
+  const runByKey = new Map(normal.map((r) => [r.interaction.key, r]));
+  const canvasByKey = new Map(result.runs.filter((r) => r.mode === "canvas").map((r) => [r.interaction.key, r]));
+  const runFor = (key?: string) => (key ? runByKey.get(key) : undefined);
+  const budgets = { feedbackMs: result.thresholds?.feedbackMs ?? 100, typingMs: result.thresholds?.typingMs ?? 100 };
+  const findingsByInteraction = new Map<string, Finding[]>();
+  for (const f of result.findings) if (f.interaction) findingsByInteraction.set(f.interaction, [...(findingsByInteraction.get(f.interaction) ?? []), f]);
   const modesBy = new Map<string, string[]>();
   for (const r of result.runs) modesBy.set(r.interaction.key, [...(modesBy.get(r.interaction.key) ?? []), r.mode]);
 
+  const headline = total ? `${plural(total, "thing")} to smooth over` : "Nothing to smooth over";
+  const sentence = total
+    ? `${[counts.error && plural(counts.error, "error"), counts.warning && plural(counts.warning, "warning"), counts.suggestion && plural(counts.suggestion, "suggestion")].filter(Boolean).join(", ")}, from ${plural(normal.length, "interaction")} measured in a real browser.`
+    : `Every one of ${plural(normal.length, "interaction")} answered within budget, moved with intent and kept its focus.`;
+
   const rows = normal
     .map((r) => {
-      const ms = r.feedbackMs;
-      const cls = ms == null ? "bad" : !r.pressFeedback && ms > 100 ? "warn" : "ok";
-      const fb = ms == null ? "none" : `${ms} ms${r.pressFeedback ? " (on press)" : ""}`;
+      const k = r.interaction.kind;
+      const fs = findingsByInteraction.get(r.interaction.key) ?? [];
+      let fb = "";
+      let spark = "";
+      if (k === "click" || k === "type") {
+        const { ms, late } = responseMs(r, canvasByKey.get(r.interaction.key), budgets);
+        const press = k === "click" && r.pressFeedback && ms != null ? " on press" : "";
+        fb = `<span class="${late ? "late" : ""}">${ms == null ? "none" : `${ms} ms${press}`}</span>`;
+        spark = sparkline(r, canvasByKey.get(r.interaction.key), budgets);
+      }
       const extra = (modesBy.get(r.interaction.key) ?? []).filter((m) => m !== "normal").join(", ");
-      return `<tr><td><code>${esc(r.interaction.key)}</code></td><td class="${cls}">${esc(fb)}</td><td>${esc(extra || "-")}</td><td>${findingsByInteraction.get(r.interaction.key) ?? 0}</td></tr>`;
+      const kindLabel = { click: "press", type: "type", dialog: "dialog", hover: "hover", page: "page sweep" }[k];
+      return `<tr${r.error ? ' class="broken"' : ""}><td><code>${esc(r.interaction.key)}</code>${r.error ? `<div class="err">${esc(r.error.slice(0, 140))}</div>` : ""}</td><td>${kindLabel}</td><td class="num">${fb}</td><td>${spark}</td><td>${esc(extra)}</td><td class="num">${fs.length ? `<a href="#${esc(fs[0].id)}">${fs.length}</a>` : ""}</td></tr>`;
     })
     .join("");
 
   const inv = result.inventory;
-  const durList = inv.durations.map((d) => `<span class="pill">${d} ms</span>`).join("");
-  const easeList = inv.easings.map((e) => `<span class="pill">${esc(e)}</span>`).join("");
-  const ruleRows = Object.values(RULES)
-    .map((r) => `<tr><td><code>${r.id}</code></td><td>${esc(r.title)}</td><td>${esc(r.threshold)}</td><td>${esc(r.evidence)}</td><td>${r.severity}</td></tr>`)
+  const easings = inv.easings
+    .map((e) => `<figure class="easing">${easingGlyph(e)}<figcaption><code>${esc(e)}</code></figcaption></figure>`)
     .join("");
+  const ruleRows = Object.values(RULES)
+    .map((r) => `<tr><td><code>${r.id}</code></td><td>${esc(r.title)}</td><td>${esc(r.threshold)}</td><td>${esc(r.evidence)}</td><td>${SEV_GLYPH[r.severity]} ${r.severity}</td></tr>`)
+    .join("");
+  const when = new Date(result.finishedAt);
+  const seconds = Math.round((when.getTime() - new Date(result.startedAt).getTime()) / 1000);
+  const strip = sessionStrip(result);
 
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>kymo report</title>
+<title>kymo report: ${esc(headline)}</title>
+<link rel="icon" href="data:image/svg+xml,${encodeURIComponent(markSvg({ mood, simple: false }))}">
 <style>
-:root{--ink:#15171c;--muted:#5d6371;--line:#e4e6eb;--bg:#fbfbfa;--paper:#fff;--err:#b4371f;--warn:#8f5d00;--sug:#4a5468;--ok:#1d7a46}
+${fontFace()}
+:root{${LIGHT};color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){${DARK};color-scheme:dark}}
+:root[data-theme=dark]{${DARK};color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-.wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px}
-header .mark{font:600 13px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em;color:var(--muted)}
-h1{font-size:28px;line-height:1.2;margin:10px 0 6px;letter-spacing:-.01em}
-.meta{color:var(--muted);margin:0}
-.tally{display:flex;gap:28px;margin:24px 0 8px;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.tally div{display:flex;flex-direction:column}.tally b{font-size:26px;line-height:1.1}.tally span{color:var(--muted);font-size:13px}
-.tally .e b{color:var(--err)}.tally .w b{color:var(--warn)}.tally .s b{color:var(--sug)}
-h2{font-size:18px;margin:40px 0 12px}
-.note{color:var(--muted);font-size:14px;margin:0 0 16px}
-.finding{display:grid;grid-template-columns:120px 1fr;gap:16px;padding:18px 0;border-bottom:1px solid var(--line)}
-.rule code{font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace}
-.rule .sev{display:block;font-size:12px;font-weight:600;margin-top:4px}
-.rule .fid{display:block;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);margin-top:6px}
-.sev-error .sev{color:var(--err)}.sev-warning .sev{color:var(--warn)}.sev-suggestion .sev{color:var(--sug)}
-.finding h3{font-size:16px;margin:0 0 4px}
-.finding p{margin:4px 0}
-.msg{color:var(--ink)}
-.where{font-size:13px;color:var(--muted)}.where code{font-size:12px;background:#f2f3f5;padding:1px 5px;border-radius:4px;word-break:break-all}
-.grp{font-weight:600;color:var(--ink);margin-right:8px}
-.metrics{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}.metrics span{margin-right:14px}.metrics b{color:var(--ink);font-weight:600}
-.fix{font-size:14px}.fix b{margin-right:6px}
-.ev{font-size:12px;color:var(--muted)}.ev a{color:inherit}
-.frames summary{cursor:pointer;font-size:13px;color:var(--muted);margin-top:6px}
-.shots{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
-.shots figure{margin:0;flex:0 1 380px}.shots img{max-width:100%;border:1px solid var(--line);border-radius:6px;display:block}
-.shots figcaption{font-size:12px;color:var(--muted);margin-top:4px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-weight:600;color:var(--muted)}
-td code{font-size:12px;word-break:break-all}
-td.ok{color:var(--ok)}td.warn{color:var(--warn);font-weight:600}td.bad{color:var(--err);font-weight:600}
-.pill{display:inline-block;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:2px 7px;margin:0 6px 6px 0}
-footer{margin-top:48px;color:var(--muted);font-size:12px}
-@media (max-width:640px){.finding{grid-template-columns:1fr;gap:4px}.tally{gap:18px}}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 "Source Serif 4",Georgia,"Times New Roman",serif;font-variant-numeric:lining-nums tabular-nums;font-optical-sizing:auto}
+a{color:inherit;text-decoration-thickness:1px;text-underline-offset:3px}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
+code{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:3px;word-break:break-word}
+.wrap{max-width:1120px;margin:0 auto;padding:44px 32px 96px}
+/* masthead */
+.mast{display:grid;grid-template-columns:auto 1fr auto;gap:8px 22px;align-items:end}
+.mark{width:84px;height:84px;display:block}
+.mark.paper{display:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .mark.soot{display:none}:root:not([data-theme=light]) .mark.paper{display:block}}
+:root[data-theme=dark] .mark.soot{display:none}:root[data-theme=dark] .mark.paper{display:block}
+.brand{font-weight:700;font-size:15px;letter-spacing:.01em;margin:0;color:var(--pencil)}
+.brand b{color:var(--ink);font-size:17px}
+h1{font-size:39px;line-height:1.12;font-weight:650;letter-spacing:-.012em;margin:4px 0 0}
+.lede{grid-column:2/3;margin:2px 0 0;color:var(--pencil);font-size:18px;max-width:62ch}
+.meta{display:grid;grid-template-columns:auto auto;gap:2px 14px;margin:0;font-size:13.5px;color:var(--pencil);text-align:left}
+.meta dt{font-weight:600;color:var(--ink)}.meta dd{margin:0;max-width:30ch;overflow-wrap:anywhere}
+.side-meta{align-self:start;justify-self:end;display:grid;gap:10px;justify-items:start}
+.theme{font:inherit;font-size:13px;color:var(--pencil);background:none;border:1px solid var(--hair);border-radius:999px;padding:3px 12px;cursor:pointer}
+/* the recording */
+.session{margin:30px 0 8px}
+.kymo-strip,.kymo-trace,.kymo-ruler{display:block;width:100%;height:auto;overflow:visible}
+.g{stroke:var(--g);stroke-width:1;fill:none}.G{stroke:var(--G);stroke-width:1;fill:none}
+.pen{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.pen.red,.dur.red{stroke:var(--red)}
+.budget{stroke:var(--red);stroke-width:1.1;stroke-dasharray:2 4;fill:none;opacity:.85}
+.lbl{font:11px/1 "Source Serif 4",Georgia,serif;fill:var(--pencil);paint-order:stroke;stroke:var(--paper-2);stroke-width:3px;stroke-linejoin:round}
+.kymo-strip .lbl,.kymo-ruler .lbl{stroke:var(--paper)}.lbl.red{fill:var(--red)}.lbl.dim{opacity:.8}
+.tick{stroke:var(--pencil);stroke-width:1.2}
+.hatch{stroke:var(--red);stroke-width:2;opacity:.35}
+.anim{stroke:var(--pencil);stroke-width:5;stroke-linecap:round;opacity:.45}.anim.moving{stroke:var(--ink);opacity:.7}.anim.loop{stroke-dasharray:2 5}
+.dur{stroke:var(--ink);stroke-width:2.4;stroke-linecap:round}
+.x{stroke:var(--red);stroke-width:1.6;stroke-linecap:round}
+.dot.error{fill:var(--red)}.dot.warning{fill:var(--ochre)}.dot.suggestion{fill:none;stroke:var(--pencil);stroke-width:1.4}
+.hit{fill:transparent}
+.legend{font-size:13.5px;color:var(--pencil);margin:6px 0 0;max-width:80ch}
+@media (prefers-reduced-motion:no-preference){.pen.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:record 480ms cubic-bezier(.2,0,0,1) 120ms forwards}@keyframes record{to{stroke-dashoffset:0}}}
+/* layout */
+.cols{display:grid;grid-template-columns:232px minmax(0,1fr);gap:48px;margin-top:40px}
+.side{position:sticky;top:20px;align-self:start;font-size:14px}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.filters button{font:inherit;font-size:13px;color:var(--ink);background:none;border:1px solid var(--hair);border-radius:999px;padding:3px 11px;cursor:pointer}
+.filters button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.index ul{list-style:none;margin:0;padding:0}
+.index a{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:baseline;padding:5px 0;text-decoration:none;border-bottom:1px solid var(--hair)}
+.index a:hover .t{text-decoration:underline}
+.index .n{color:var(--pencil)}
+.sg{width:11px;height:11px;flex:none;vertical-align:-1px}.sg.error{fill:var(--red)}.sg.warning{fill:var(--ochre)}.sg.suggestion{fill:none;stroke:var(--pencil);stroke-width:1.6}
+h2{font-size:25px;line-height:1.25;font-weight:620;margin:64px 0 6px;letter-spacing:-.005em}
+.cols h2:first-child{margin-top:0}
+.note{color:var(--pencil);margin:0 0 18px;max-width:72ch}
+/* findings */
+.finding{padding:26px 0 30px;border-top:1px solid var(--hair);max-width:760px}
+.finding[hidden]{display:none}
+.kicker{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:0;font-size:13.5px;color:var(--pencil)}
+.kicker .sev{font-weight:600;color:var(--ink)}
+.finding[data-sev=error] .kicker .sev{color:var(--red)}.finding[data-sev=warning] .kicker .sev{color:var(--ochre)}
+.kicker .rid{font-variant-numeric:tabular-nums}
+.grp{font-weight:600;color:var(--ink)}
+h3{font-size:21px;line-height:1.3;font-weight:620;margin:4px 0 6px}
+.msg{font-size:17px;margin:0 0 12px;max-width:68ch}
+.trace{margin:14px 0 12px;padding:10px 12px 6px;background:var(--paper-2);border-radius:4px}
+.via{font-size:14px;color:var(--pencil);margin:0 0 4px}
+.el{margin:0 0 8px;font-size:13px}
+.src{list-style:none;margin:6px 0 12px;padding:0;font-size:14px}
+.src li{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;padding:2px 0}
+.src li>span{color:var(--pencil)}
+.src .sel{background:none;padding:0}
+.fix{margin:10px 0 6px;max-width:68ch;padding-left:14px;border-left:2px solid var(--ink)}
+.ev{font-size:13.5px;color:var(--pencil);margin:6px 0 10px;max-width:72ch}
+details{margin:6px 0}
+summary{cursor:pointer;font-size:14px;color:var(--pencil)}
+.frames{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.frames figure{margin:0;flex:0 1 340px}
+.frames img{max-width:100%;display:block;border:1px solid var(--hair);border-radius:4px}
+.frames figcaption{font-size:13px;color:var(--pencil);margin-top:4px}
+.metrics dl{display:grid;grid-template-columns:max-content 1fr;gap:2px 14px;margin:8px 0 0;font-size:13.5px}
+.metrics dt{color:var(--pencil)}.metrics dd{margin:0}
+.cmds{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}
+.cmds code{font-size:11.5px}
+.copy{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);background:none;border:1px solid var(--hair);border-radius:3px;padding:2px 7px;cursor:copy}
+.copy.done{border-color:var(--ink)}
+.empty{font-size:18px;max-width:60ch}
+/* tables and inventory */
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:7px 10px 7px 0;border-bottom:1px solid var(--hair);vertical-align:middle}
+th{font-weight:600;color:var(--pencil);font-size:13px}
+td.num{text-align:right;white-space:nowrap}
+.late{color:var(--red);font-weight:600}
+tr.broken td{color:var(--pencil)}.err{font-size:12px;color:var(--red)}
+.spark{width:120px;height:22px;display:block}
+.easings{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px}
+.easing{margin:0;width:112px}.easing figcaption{font-size:11px;line-height:1.3;overflow-wrap:anywhere}.easing code{background:none;padding:0;font-size:10.5px}
+.ease{width:44px;height:44px;display:block}
+footer{margin-top:80px;padding-top:18px;border-top:1px solid var(--hair);display:flex;gap:14px;align-items:center;color:var(--pencil);font-size:13.5px}
+footer svg{width:30px;height:30px}
+@media (max-width:980px){.cols{grid-template-columns:1fr;gap:20px}.side{position:static}.index ul{columns:2;column-gap:24px}}
+@media (max-width:640px){.wrap{padding:28px 16px 64px}.mast{grid-template-columns:auto 1fr}.mark{width:56px;height:56px}h1{font-size:29px}.lede{grid-column:1/3}.side-meta{grid-column:1/3;grid-row:auto;justify-self:start}.index ul{columns:1}.msg{font-size:16px}}
+@media print{.side,.theme,.cmds,.filters{display:none}.cols{display:block}.finding{break-inside:avoid}}
 </style></head>
 <body><div class="wrap">
-<header>
-  <div class="mark">kymo ${esc(result.version)}</div>
-  <h1>${total ? `${total} thing${total === 1 ? "" : "s"} to smooth over` : "Nothing to smooth over"}</h1>
-  <p class="meta">${esc(result.baseUrl)} · ${result.routes.map(esc).join(", ")} · ${normal.length} interactions · ${esc(new Date(result.finishedAt).toLocaleString("en-US"))}</p>
+<header class="mast">
+  <div>${markSvg({ mood, title: "kymo", id: "m1" }).replace("<svg ", '<svg class="mark soot" ')}${markSvgPaper({ mood, title: "kymo", id: "m2" }).replace("<svg ", '<svg class="mark paper" ')}</div>
+  <div>
+    <p class="brand"><b>kymo</b> ${esc(result.version)}</p>
+    <h1>${esc(headline)}</h1>
+  </div>
+  <div class="side-meta"><dl class="meta">
+    <dt>App</dt><dd>${esc(result.baseUrl)}</dd>
+    <dt>Routes</dt><dd>${result.routes.map(esc).join(", ")}</dd>
+    <dt>Viewports</dt><dd>${result.viewports.map((v) => `${esc(v.name)} ${v.width}×${v.height}`).join(", ")}</dd>
+    <dt>Measured</dt><dd>${esc(when.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }))}, ${seconds} s</dd>
+  </dl><button type="button" class="theme" id="theme" aria-label="Switch colour theme">Theme: auto</button></div>
+  <p class="lede">${esc(sentence)}</p>
 </header>
-<section class="tally">
-  <div class="e"><b>${counts.error}</b><span>errors</span></div>
-  <div class="w"><b>${counts.warning}</b><span>warnings</span></div>
-  <div class="s"><b>${counts.suggestion}</b><span>suggestions</span></div>
-</section>
-<p class="note">Severity follows evidence: specs and studies can warn or error, practitioner taste only suggests. Every number below was measured in a real browser.</p>
 
-<h2>Findings</h2>
-${result.findings.map((f) => findingHtml(f, outDir)).join("\n") || '<p class="note">No findings.</p>'}
+${strip ? `<section class="session" aria-labelledby="rec">
+  <h2 id="rec" class="visually-hidden" style="position:absolute;left:-9999px">Recording</h2>
+  ${strip}
+  <p class="legend">Each pulse is one press or keystroke, in the order kymo made them. Its height is the time until the screen first changed; the dashed line is the ${result.thresholds?.feedbackMs ?? 100} ms budget. Red pulses missed it, a cross means nothing changed, and a dot links to that interaction's worst finding.</p>
+</section>` : ""}
 
-<h2>Interactions</h2>
-<p class="note">Feedback is the time from release to the first visible change, or from press when something changed while the button was held.</p>
-<table><thead><tr><th>Interaction</th><th>Feedback</th><th>Also run with</th><th>Findings</th></tr></thead><tbody>${rows}</tbody></table>
+<div class="cols">
+  <aside class="side">
+    ${total ? `<div class="filters" role="group" aria-label="Show findings">
+      <button type="button" data-filter="all" aria-pressed="true">All ${total}</button>
+      ${counts.error ? `<button type="button" data-filter="error" aria-pressed="false">Errors ${counts.error}</button>` : ""}
+      ${counts.warning ? `<button type="button" data-filter="warning" aria-pressed="false">Warnings ${counts.warning}</button>` : ""}
+      ${counts.suggestion ? `<button type="button" data-filter="suggestion" aria-pressed="false">Suggestions ${counts.suggestion}</button>` : ""}
+    </div>${indexHtml(result.findings)}` : ""}
+  </aside>
+  <main>
+    <h2>Findings</h2>
+    <p class="note">Worst first. Severity follows the evidence: specs and studies can warn or error; practitioner taste only suggests.</p>
+    ${result.findings.map((f) => findingHtml(f, result, outDir, runFor)).join("\n") || `<p class="empty">No findings. kymo pressed, typed, tabbed, hovered and scrolled through everything it could reach, and it all held up.</p>`}
 
-<h2>Motion inventory</h2>
-<p class="note">Stylesheets declare ${inv.durations.length} distinct durations and ${inv.easings.length} distinct easing curves (looping animations and var() token references are not counted). ${inv.runtime.durations.length} durations were seen running during the interactions. ${
-    inv.hasReducedMotionQuery ? "The CSS has a prefers-reduced-motion query." : "The CSS has no prefers-reduced-motion query."
-  }</p>
-<div>${durList}</div><div style="margin-top:6px">${easeList}</div>
+    <h2>Interactions</h2>
+    <p class="note">Feedback is the time from release to the first visible change, or from the press when something changed while the button was held. For typing, it is keydown to the letter on screen.</p>
+    <div class="tablewrap"><table><thead><tr><th>Interaction</th><th>Kind</th><th class="num">Feedback</th><th>Trace</th><th>Also run with</th><th class="num">Findings</th></tr></thead><tbody>${rows}</tbody></table></div>
 
-<h2>Rules</h2>
-<table><thead><tr><th>Rule</th><th>Checks</th><th>Threshold</th><th>Evidence</th><th>Severity</th></tr></thead><tbody>${ruleRows}</tbody></table>
-<footer>Generated by kymo. Thresholds marked as proposals are unvalidated starting points.</footer>
-</div></body></html>`;
+    <h2>Motion inventory</h2>
+    <p class="note">The stylesheets declare ${plural(inv.durations.length, "distinct duration")} and ${plural(inv.easings.length, "easing curve")} (loops and var() references are not counted). ${
+      inv.hasReducedMotionQuery ? "They include a prefers-reduced-motion query." : "They have no prefers-reduced-motion query."
+    }</p>
+    ${inv.durations.length ? durationRuler(inv, result.thresholds?.maxDurationMs ?? 500) : ""}
+    ${easings ? `<div class="easings">${easings}</div>` : ""}
+
+    <h2>Rules</h2>
+    <details><summary>What kymo checks, and why</summary><div class="tablewrap"><table><thead><tr><th>Rule</th><th>Checks</th><th>Threshold</th><th>Evidence</th><th>Severity</th></tr></thead><tbody>${ruleRows}</tbody></table></div></details>
+  </main>
+</div>
+<footer>${markSvg({ mood: "calm", id: "f1" }).replace("<svg ", '<svg class="mark soot" style="width:30px;height:30px" ')}${markSvgPaper({ mood: "calm", id: "f2" }).replace("<svg ", '<svg class="mark paper" style="width:30px;height:30px" ')}<span>Recorded by kymo ${esc(result.version)} in Chromium. A kymograph writes motion onto a turning drum; this one writes how your interface answers.</span></footer>
+</div>
+<script>
+(() => {
+  const root = document.documentElement, btn = document.getElementById("theme");
+  const order = ["auto", "light", "dark"];
+  let theme = "auto";
+  try { theme = localStorage.getItem("kymo-theme") || "auto"; } catch (e) {}
+  const apply = () => { if (theme === "auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", theme); btn.textContent = "Theme: " + theme; };
+  apply();
+  btn.addEventListener("click", () => { theme = order[(order.indexOf(theme) + 1) % 3]; try { localStorage.setItem("kymo-theme", theme); } catch (e) {} apply(); });
+  const filters = document.querySelectorAll("[data-filter]");
+  for (const b of filters) b.addEventListener("click", () => {
+    const f = b.dataset.filter;
+    for (const o of filters) o.setAttribute("aria-pressed", String(o === b));
+    for (const el of document.querySelectorAll(".finding, .index li")) el.hidden = f !== "all" && el.dataset.sev !== f;
+  });
+  for (const c of document.querySelectorAll("[data-copy]")) c.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(c.dataset.copy); c.classList.add("done"); c.textContent = "Copied"; setTimeout(() => { c.textContent = c.dataset.copy; c.classList.remove("done"); }, 1200); } catch (e) {}
+  });
+})();
+</script>
+</body></html>`;
 }

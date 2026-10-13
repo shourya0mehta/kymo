@@ -1,7 +1,7 @@
 {
   "name": "kymo",
-  "version": "0.1.0",
-  "description": "Measures how a web app feels in a real browser, then lets Claude fix what it finds and keeps only the fixes that measurably help.",
+  "version": "0.2.0",
+  "description": "Measures how a web app feels in a real browser (feedback, motion, focus, hover, typing, scroll, layout), then lets Claude fix what it finds and keeps only the fixes that measurably help.",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json && cp src/browser/inpage.js dist/browser/inpage.js",
@@ -10,14 +10,19 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "zoo": "node zoo/server.mjs",
     "eval": "tsx src/cli.ts eval",
-    "test:e2e": "vitest run --config vitest.e2e.config.ts"
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "prepare": "npm run build"
   },
   "author": "Shourya Mehta",
   "license": "MIT",
   "dependencies": {
-    "playwright": "^1.56.0"
+    "playwright": "^1.56.0",
+    "source-map-js": "^1.2.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/plugin-syntax-jsx": "^7.29.7",
+    "@types/babel__core": "^7.20.5",
     "@types/node": "^22.20.5",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
@@ -29,6 +34,7 @@
   },
   "files": [
     "dist",
+    "assets",
     "skills",
     "zoo",
     "README.md",
@@ -38,17 +44,43 @@
     "node": ">=20"
   },
   "keywords": [
-    "ux",
-    "motion",
-    "animation",
-    "playwright",
-    "claude",
-    "skill",
     "accessibility",
-    "performance"
+    "animation",
+    "ci",
+    "claude",
+    "core-web-vitals",
+    "kymograph",
+    "motion",
+    "performance",
+    "playwright",
+    "sarif",
+    "skill",
+    "ux",
+    "wcag"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/shourya0mehta/kymo"
-  }
+  },
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./babel": {
+      "types": "./dist/plugins/babel.d.ts",
+      "default": "./dist/plugins/babel.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": {
+    "@babel/core": "^7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@babel/core": {
+      "optional": true
+    }
+  },
+  "homepage": "https://github.com/shourya0mehta/kymo#readme"
 }

@@ -4,7 +4,8 @@ import type { Capture, InteractionRun } from "../src/types.js";
 
 const cap = (c: Partial<Capture>): Capture => ({
   downAt: 1000, upAt: 1090, clickAt: 1091, firstChangeAt: null, firstChangeReasons: [], frames: 60,
-  teleports: [], pops: [], animations: [], errorUi: null, viewport: { w: 1280, h: 800 }, ...c,
+  teleports: [], pops: [], vanishes: [], animations: [], longFrames: [], newControls: [], dialog: null,
+  errorUi: null, viewport: { w: 1280, h: 800 }, ...c,
 });
 const run = (c: Partial<Capture>): InteractionRun => ({
   interaction: { key: "/ #x", route: "/", kind: "click", target: { css: "#x", id: "x" } },
