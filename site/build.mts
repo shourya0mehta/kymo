@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { markSvg, mascotGrid } from "../src/brand.js";
+import { markSvg, mascotGrid, gridPath, PALETTE } from "../src/brand.js";
 import { RULES } from "../src/rules.js";
 import { interactionTrace } from "../src/report/trace.js";
 import type { InteractionRun } from "../src/types.js";
@@ -29,6 +29,12 @@ const grid = {
   mouths: Object.fromEntries((["calm", "busy", "alarm"] as const).map((m) => [m, mascotGrid(m).slice(9, 13)])),
 };
 const mark = (mood: "calm" | "busy" | "alarm", attrs = "") => markSvg({ mood, attrs: `aria-hidden="true" ${attrs}` }).replace(/ role="img" aria-label="[^"]*"/, "").replace(/<title>.*?<\/title>/, "");
+// a mascot the page script can redraw (mood, blink, eyes); drawn in full at build time so it is there before any script runs
+const pet = (id: string, mood: "calm" | "busy" | "alarm", cls: string, label?: string) => {
+  const g = mascotGrid(mood);
+  const a11y = label ? `role="img" aria-label="${label}"` : `aria-hidden="true"`;
+  return `<svg class="${cls}" id="${id}" viewBox="0 0 64 64" shape-rendering="crispEdges" ${a11y}><path class="body" fill="var(--cobalt)" d="${gridPath(g, "#")}"/><path class="face" fill="${PALETTE.surface}" d="${gridPath(g, "o")}"/></svg>`;
+};
 
 // the rules, grouped the way a person thinks about them
 const groups: [string, string[]][] = [
@@ -67,9 +73,10 @@ const fill = (tpl: string, vars: Record<string, string>) => tpl.replace(/\{\{(\w
 });
 const body = fill(read("site/src/page.html"), {
   VERSION: esc(pkg.version),
-  MARK_NAV: mark("busy"),
+  MARK_NAV: pet("navpet", "busy", "mark"),
+  PET: pet("pet", "busy", "pet", "kymo, the mascot"),
   MARK_FOOT: mark("calm"),
-  MARK_DOG: mark("calm"),
+  MARK_DOG: pet("dogpet", "calm", "mark"),
   REPORT_MESSAGE: esc(finding.message),
   REPORT_TRACE,
   REPORT_SOURCES,

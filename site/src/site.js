@@ -33,18 +33,26 @@
     }
     return rows;
   };
-  const pet = $("#pet");
-  const state = { mood: "busy", blink: false, look: 0 };
-  let drawn = "";
-  const drawPet = () => {
-    const key = `${state.mood}${state.blink}${state.look}`;
-    if (key === drawn || !pet) return;
-    drawn = key;
-    const g = gridFor(state.mood, state.blink, state.look);
-    pet.querySelector(".body").setAttribute("d", pathOf(g, "#"));
-    pet.querySelector(".face").setAttribute("d", pathOf(g, "o"));
+  // one drawer per mascot on the page: hero, nav and the dogfood note
+  const mascot = (svg, mood = "busy") => {
+    if (!svg) return null;
+    const st = { mood, blink: false, look: 0 };
+    let key = "";
+    const draw = () => {
+      const k = `${st.mood}${st.blink}${st.look}`;
+      if (k === key) return;
+      key = k;
+      const g = gridFor(st.mood, st.blink, st.look);
+      svg.querySelector(".body").setAttribute("d", pathOf(g, "#"));
+      svg.querySelector(".face").setAttribute("d", pathOf(g, "o"));
+    };
+    draw();
+    return { svg, st, draw, mood(m) { st.mood = m; draw(); } };
   };
-  drawPet();
+  const pet = $("#pet");
+  const hero = mascot(pet), navm = mascot($("#navpet")), dogm = mascot($("#dogpet"), "calm");
+  const state = hero ? hero.st : { mood: "busy" };
+  const drawPet = () => hero && hero.draw();
   let moodTimer = 0;
   const setMood = (mood, ms = 1600) => {
     state.mood = mood;
@@ -53,25 +61,31 @@
     moodTimer = setTimeout(() => { state.mood = "busy"; drawPet(); }, ms);
   };
   // blink now and then; a blink is a frame swap, like the pixel art it is
-  const blinkLater = () => setTimeout(() => {
-    if (!reduce.matches) { state.blink = true; drawPet(); setTimeout(() => { state.blink = false; drawPet(); }, 130); }
-    blinkLater();
+  const blinkLater = (m) => m && setTimeout(() => {
+    if (!reduce.matches) { m.st.blink = true; m.draw(); setTimeout(() => { m.st.blink = false; m.draw(); }, 130); }
+    blinkLater(m);
   }, 2800 + Math.random() * 3200);
-  blinkLater();
+  blinkLater(hero);
+  blinkLater(navm);
   // the eyes follow the pointer, one pixel at a time
   let pending = false, lastX = 0;
   addEventListener("pointermove", (e) => {
     lastX = e.clientX;
-    if (pending || reduce.matches || !pet) return;
+    if (pending || reduce.matches) return;
     pending = true;
     requestAnimationFrame(() => {
       pending = false;
-      const r = pet.getBoundingClientRect();
-      const dx = lastX - (r.left + r.width / 2);
-      const look = Math.abs(dx) < r.width ? 0 : dx < 0 ? -1 : 1;
-      if (look !== state.look) { state.look = look; drawPet(); }
+      for (const m of [hero, navm]) {
+        if (!m) continue;
+        const r = m.svg.getBoundingClientRect();
+        const dx = lastX - (r.left + r.width / 2);
+        const look = Math.abs(dx) < Math.max(r.width, 40) ? 0 : dx < 0 ? -1 : 1;
+        if (look !== m.st.look) { m.st.look = look; m.draw(); }
+      }
     });
   }, { passive: true });
+  // the boot plays once; later hops must not replay it
+  if (pet) pet.addEventListener("animationend", (e) => { if (e.animationName === "boot") pet.classList.add("booted"); });
 
   // ---------- the recorder strip ----------
   const strip = $("#strip");
@@ -119,9 +133,10 @@
       t.textContent = p.ms >= 1000 ? `${(p.ms / 1000).toFixed(1)}s` : `${Math.round(p.ms)}`;
     });
     d += ` L${W + 40} ${BASE}`;
+    const firstDraw = first;
     const pen = el("path", { class: "pen", d, pathLength: first ? "1" : "" }, track);
     if (first) { pen.classList.add("draw"); first = false; } else pen.removeAttribute("pathLength");
-    for (const l of lates) el("path", { class: "pen late", d: l }, track);
+    for (const l of lates) el("path", { class: `pen late${firstDraw ? " first" : ""}`, d: l }, track);
     if (slide && !reduce.matches) {
       // the drum turns: start one step to the right, then glide into place
       track.style.transition = "none";
@@ -299,5 +314,177 @@
       }
       setTimeout(() => (b.textContent = "Copy"), 1400);
     });
+  }
+
+  // ---------- the nav trace: a kymograph of the page, drawn as you scroll ----------
+  const trace = $("#navtrace");
+  const sections = Array.from(document.querySelectorAll("main > section"));
+  let ink = null, dot = null, jank = null, tlen = 0, jankX = Infinity, tw = 0;
+  const docSpan = () => Math.max(1, document.documentElement.scrollHeight - innerHeight);
+  const buildTrace = () => {
+    if (!trace) return;
+    tw = Math.round(nav.getBoundingClientRect().width);
+    const span = docSpan();
+    trace.setAttribute("viewBox", `0 0 ${tw} 12`);
+    let d = "M0 6", jd = "";
+    jankX = Infinity;
+    for (const sec of sections.slice(1)) {
+      const x = Math.round(Math.min(1, sec.offsetTop / span) * tw);
+      if (x < 12 || x > tw - 12) continue;
+      // each section is a pulse; the one with the planted jank spikes higher, in red
+      const tall = sec.id === "catches";
+      const seg = `L${x - 5} 6 L${x - 2} ${tall ? -3 : 1} L${x + 1} ${tall ? 10 : 9} L${x + 4} 6`;
+      d += ` ${seg}`;
+      if (tall) { jd = `M${x - 5} 6 ${seg}`; jankX = x; }
+    }
+    d += ` L${tw} 6`;
+    trace.innerHTML = `<path class="base" d="${d}"/><path class="ink" d="${d}"/>${jd ? `<path class="jank" d="${jd}"/>` : ""}<circle class="dot" r="2.5" cx="0" cy="6"/>`;
+    ink = trace.querySelector(".ink");
+    dot = trace.querySelector(".dot");
+    jank = trace.querySelector(".jank");
+    tlen = ink.getTotalLength();
+    ink.style.strokeDasharray = `${tlen} ${tlen}`;
+    updateTrace();
+  };
+  const updateTrace = () => {
+    if (!ink) return;
+    const p = Math.min(1, Math.max(0, scrollY / docSpan()));
+    const len = p * tlen;
+    ink.style.strokeDashoffset = String(tlen - len);
+    const pt = ink.getPointAtLength(len);
+    dot.setAttribute("cx", pt.x.toFixed(1));
+    dot.setAttribute("cy", pt.y.toFixed(1));
+    if (jank) jank.classList.toggle("on", pt.x > jankX + 4);
+  };
+  let traceQueued = false;
+  addEventListener("scroll", () => {
+    if (traceQueued) return;
+    traceQueued = true;
+    requestAnimationFrame(() => { traceQueued = false; updateTrace(); });
+  }, { passive: true });
+  let resizeQueued = false;
+  addEventListener("resize", () => {
+    if (resizeQueued) return;
+    resizeQueued = true;
+    requestAnimationFrame(() => { resizeQueued = false; buildTrace(); });
+  });
+  buildTrace();
+  if (document.fonts) document.fonts.ready.then(buildTrace);
+  addEventListener("load", buildTrace);
+
+  // ---------- which section you are reading: the nav link underlines and the nav mascot reacts ----------
+  const moods = { top: "busy", catches: "alarm", loop: "busy", report: "busy", rules: "busy", proof: "calm", install: "calm" };
+  const links = Array.from(document.querySelectorAll(".nav nav a"));
+  const reading = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      const id = e.target.id;
+      if (navm) navm.mood(moods[id] || "busy");
+      for (const a of links) a.classList.toggle("current", a.getAttribute("href") === `#${id}`);
+    }
+  }, { rootMargin: "-45% 0px -50% 0px" });
+  sections.forEach((sec) => reading.observe(sec));
+
+  // in-page links glide instead of jumping (kept off a global scroll-behavior, so scripts that scroll stay instant)
+  for (const a of document.querySelectorAll('a[href^="#"]:not(.skip)')) {
+    a.addEventListener("click", (e) => {
+      const id = a.getAttribute("href").slice(1);
+      const target = id === "top" ? document.body : document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      target.scrollIntoView({ behavior: reduce.matches ? "auto" : "smooth", block: "start" });
+      try { history.replaceState(null, "", `#${id}`); } catch { /* the hash is a convenience */ }
+    });
+  }
+
+  // ---------- entrances, only where arrival order means something ----------
+  const count = (el, delay) => {
+    const from = Number(el.dataset.from), to = Number(el.dataset.to);
+    // hold the wider of the two widths (measured now, with the real font), so counting never nudges the words beside it
+    el.textContent = String(to);
+    const wTo = el.getBoundingClientRect().width;
+    el.textContent = String(from);
+    el.style.minWidth = `${Math.max(wTo, el.getBoundingClientRect().width).toFixed(2)}px`;
+    setTimeout(() => {
+      const t0 = performance.now(), D = 640;
+      const tick = (now) => {
+        const k = Math.min(1, (now - t0) / D);
+        el.textContent = String(Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3))));
+        if (k < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, delay);
+  };
+  const prepTrace = (box) => {
+    const svg = box.querySelector(".trace-box svg");
+    if (!svg) return null;
+    const pens = Array.from(svg.querySelectorAll(".pen"));
+    const marks = Array.from(svg.querySelectorAll(".lbl, .anim, .tick"));
+    const lens = pens.map((p) => p.getTotalLength());
+    pens.forEach((p) => { p.setAttribute("pathLength", "1"); p.style.strokeDasharray = "1"; p.style.strokeDashoffset = "1"; });
+    marks.forEach((m) => { m.style.opacity = "0"; });
+    return { svg, pens, marks, lens };
+  };
+  const drawTrace = (t, start) => {
+    // the pen runs left to right at one speed; marks appear as it passes them
+    const W = t.svg.viewBox.baseVal.width || 640, D = 520;
+    const total = t.lens.reduce((a, b) => a + b, 0) || 1;
+    let at = start;
+    t.pens.forEach((p, i) => {
+      const d = Math.max(40, (D * t.lens[i]) / total);
+      p.style.transition = `stroke-dashoffset ${Math.round(d)}ms linear ${Math.round(at)}ms`;
+      p.style.strokeDashoffset = "0";
+      at += d;
+    });
+    t.marks.forEach((m) => {
+      let x = 0;
+      try { x = m.getBBox().x; } catch { /* not rendered */ }
+      m.style.transition = `opacity 180ms ease-out ${Math.round(start + (D * x) / W)}ms`;
+      m.style.opacity = "";
+    });
+  };
+  const arrive = (els, step) => {
+    els.forEach((el, i) => { el.style.setProperty("--i", String(i)); el.style.setProperty("--step", `${step}ms`); el.classList.add("arriving"); el.classList.remove("pre"); });
+    setTimeout(() => els.forEach((el) => { el.classList.remove("arriving"); el.style.removeProperty("--i"); el.style.removeProperty("--step"); }), 420 + els.length * step);
+  };
+  const play = (box) => {
+    const kind = box.dataset.enter;
+    if (kind === "stagger") {
+      arrive(Array.from(box.children), 60);
+      box.querySelectorAll(".num").forEach((n, i) => count(n, 180 + i * 60));
+    } else if (kind === "loop") {
+      box.classList.remove("pre-line");
+      arrive(Array.from(box.children), 90);
+    } else if (kind === "report") {
+      arrive([box], 0);
+      if (box._trace) drawTrace(box._trace, 260);
+    } else if (kind === "dogfood") {
+      arrive([box], 0);
+      // the audit found five problems; it settles once they are fixed
+      setTimeout(() => { if (dogm) dogm.mood("calm"); }, 900);
+    }
+  };
+  const below = (el) => el.getBoundingClientRect().top > innerHeight * 0.9;
+  if (!reduce.matches && "IntersectionObserver" in window) {
+    const entering = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        entering.unobserve(e.target);
+        play(e.target);
+      }
+    }, { rootMargin: "0px 0px -12% 0px" });
+    for (const box of document.querySelectorAll("[data-enter]")) {
+      if (!below(box)) continue; // already on screen: leave it as it is
+      const kind = box.dataset.enter;
+      const items = kind === "stagger" || kind === "loop" ? Array.from(box.children) : [box];
+      items.forEach((el) => el.classList.add("pre"));
+      if (kind === "loop") box.classList.add("pre-line");
+      if (kind === "report") box._trace = prepTrace(box);
+      if (kind === "dogfood" && dogm) dogm.mood("alarm");
+      box.querySelectorAll(".num").forEach((n) => { n.textContent = n.dataset.from; });
+      entering.observe(box);
+    }
+    // printing or saving shows everything
+    addEventListener("beforeprint", () => document.querySelectorAll(".pre, .pre-line").forEach((el) => el.classList.remove("pre", "pre-line")));
   }
 })();

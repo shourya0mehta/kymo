@@ -1,8 +1,9 @@
 /* kymo launch page.
    Layout: one left-aligned column of sections on a 1160px grid; the hero pairs the headline with a
    live recorder, the one bold element. Everything else stays quiet: hairlines, no shadows, small radii.
-   Motion follows kymo's own rules: 100 to 240 ms, decelerating entrances, transform and opacity only,
-   nothing hidden waiting for a scroll observer, and all of it off under reduced motion. */
+   Motion follows kymo's own rules: short, decelerating entrances on transform and opacity, one load
+   sequence in the hero, one scroll-linked trace in the nav, and entrances only where arrival order
+   means something. Everything is in place without script, and all of it is off under reduced motion. */
 :root {
   --paper: #f3f4f7;
   --surface: #ffffff;
@@ -23,6 +24,7 @@
   --mono: "Martian Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --t-sm: 100ms;
   --t-md: 180ms;
   --t-lg: 240ms;
@@ -76,7 +78,14 @@ code { font-size: 0.82em; background: var(--code-bg); padding: 2px 6px; border-r
   display: inline-flex; align-items: center;
   transition: color var(--t-sm) var(--ease-out), background-color var(--t-sm) var(--ease-out);
 }
-.nav nav a:hover, .nav .gh:hover { color: var(--ink); background: var(--sunk); }
+.nav .gh:hover { color: var(--ink); background: var(--sunk); }
+.nav nav a { position: relative; }
+.nav nav a::after {
+  content: ""; position: absolute; left: 10px; right: 10px; bottom: 8px; height: 2px; border-radius: 2px; background: var(--cobalt);
+  transform: scaleX(0); transform-origin: left; transition: transform var(--t-md) var(--ease-out);
+}
+.nav nav a:hover, .nav nav a.current { color: var(--ink); }
+.nav nav a:hover::after, .nav nav a.current::after { transform: scaleX(1); }
 .nav .gh { color: var(--ink); border: 1px solid var(--line); gap: 8px; padding-inline: 14px; }
 .nav .gh svg { width: 16px; height: 16px; }
 
@@ -91,6 +100,8 @@ code { font-size: 0.82em; background: var(--code-bg); padding: 2px 6px; border-r
 .btn:active { transform: scale(0.97); }
 .btn.primary { background: var(--cobalt); border-color: var(--cobalt); color: var(--on-cobalt); }
 .btn.primary:hover { background: color-mix(in srgb, var(--cobalt) 88%, black); }
+.btn .arrow { width: 16px; height: 16px; margin-right: -4px; transition: transform var(--t-md) var(--ease-out); }
+.btn:hover .arrow { transform: translateX(3px); }
 
 /* hero */
 .hero { padding-block: clamp(36px, 7vw, 88px) clamp(40px, 6vw, 72px); }
@@ -310,3 +321,52 @@ footer a { color: var(--muted); }
   .copy { min-height: 44px; }
   footer nav a { display: inline-flex; align-items: center; min-height: 44px; }
 }
+
+/* ---------- motion ---------- */
+/* the headline sits in clipped lines so each can rise into place */
+h1 .line { display: block; overflow: hidden; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+h1 .line > span { display: block; }
+.version li:nth-child(2) { --i: 1; } .version li:nth-child(3) { --i: 2; }
+@media (prefers-reduced-motion: no-preference) {
+  .version li { animation: arrive 380ms var(--ease-expo) both; animation-delay: calc(var(--i, 0) * 50ms); }
+  h1 .line > span { animation: lineup 480ms var(--ease-expo) 60ms both; }
+  h1 .line + .line > span { animation-delay: 130ms; }
+  .lede { animation: arrive 440ms var(--ease-expo) 200ms both; }
+  .cta { animation: arrive 440ms var(--ease-expo) 260ms both; }
+  .recorder { animation: arrive 460ms var(--ease-expo) 140ms both; }
+  .rec-head .pet:not(.booted) { animation: boot 320ms steps(8, end) 380ms both; }
+  .strip .draw { animation-delay: 460ms; }
+  .strip .pen.late.first { animation: fadein var(--t-md) var(--ease-out) 820ms both; }
+}
+@keyframes arrive { from { opacity: 0; transform: translateY(16px); } }
+@keyframes lineup { from { transform: translateY(108%); } }
+@keyframes boot { from { clip-path: inset(0 0 100% 0); } }
+@keyframes fadein { from { opacity: 0; } }
+
+/* the nav trace: the page is the recording, drawn as you scroll */
+.navtrace { position: absolute; left: 0; bottom: -6px; width: 100%; height: 12px; overflow: visible; pointer-events: none; opacity: 0; transition: opacity var(--t-md) var(--ease-out); }
+.nav.scrolled { border-bottom-color: transparent; }
+.nav.scrolled .navtrace { opacity: 1; }
+.navtrace path { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.navtrace .base { stroke: var(--line); stroke-width: 1; }
+.navtrace .ink { stroke: var(--cobalt); stroke-width: 1.6; }
+.navtrace .jank { stroke: var(--red); stroke-width: 1.6; opacity: 0; transition: opacity var(--t-md) var(--ease-out); }
+.navtrace .jank.on { opacity: 1; }
+.navtrace .dot { fill: var(--cobalt); }
+
+/* entrances: script hides only what is still below the fold, then lets it arrive in order */
+:root .pre { opacity: 0; transform: translateY(18px); }
+:root .arriving { transition: opacity 320ms var(--ease-out), transform 380ms var(--ease-expo); transition-delay: calc(var(--i, 0) * var(--step, 60ms)); }
+.loop { position: relative; }
+.loop::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--cobalt); transform-origin: left; z-index: 1; transition: transform 480ms var(--ease-out); }
+.loop.pre-line::before { transform: scaleX(0); }
+.loop .n { color: var(--cobalt-ink); transition: color var(--t-md) var(--ease-out); transition-delay: calc(var(--i, 0) * var(--step, 60ms) + 120ms); }
+.loop li.pre .n { color: var(--muted); }
+.num { display: inline-block; text-align: right; }
+
+/* small answers to the pointer */
+.specimen { transition: border-color var(--t-md) var(--ease-out); }
+.specimen:hover { border-color: color-mix(in srgb, var(--cobalt) 40%, var(--line)); }
+.rule-group li { margin-inline: -8px; padding-inline: 8px; border-radius: 6px; transition: background-color var(--t-sm) var(--ease-out); }
+.rule-group li:hover { background: var(--sunk); }
+
